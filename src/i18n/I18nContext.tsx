@@ -55,6 +55,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'upload.schedule': 'Schedule',
     'upload.scheduleHint': 'Leave empty to publish immediately after processing',
     'upload.uploadButton': 'Upload & Distribute',
+    'upload.selectAll': 'Select All',
+    'upload.deselectAll': 'Deselect All',
 
     // My Videos page
     'myVideos.title': 'My Videos',
@@ -119,6 +121,14 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Footer
     'footer.allRights': 'All rights reserved.',
+
+    // Common
+    'common.backToHome': 'Back to Home',
+    'common.goBack': 'Go Back',
+
+    // Errors
+    'errors.pageNotFound': 'Page Not Found',
+    'errors.pageNotFoundDescription': "Oops! We can't seem to find the page you're looking for.",
   },
 
   zh: {
@@ -164,6 +174,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'upload.schedule': '定时发布',
     'upload.scheduleHint': '留空则在处理完成后立即发布',
     'upload.uploadButton': '上传并分发',
+    'upload.selectAll': '全选',
+    'upload.deselectAll': '取消全选',
 
     // My Videos page
     'myVideos.title': '我的视频',
@@ -227,6 +239,14 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Footer
     'footer.allRights': '版权所有。',
+
+    // Common
+    'common.backToHome': '返回首页',
+    'common.goBack': '返回上一页',
+
+    // Errors
+    'errors.pageNotFound': '页面未找到',
+    'errors.pageNotFoundDescription': '哎呀！我们找不到您要找的页面。',
   },
 };
 

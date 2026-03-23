@@ -4,9 +4,6 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormGroup from '@mui/material/FormGroup';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
@@ -59,6 +56,14 @@ const Upload = () => {
     setSelectedPlatforms((prev) =>
       prev.includes(platformId) ? prev.filter((id) => id !== platformId) : [...prev, platformId],
     );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPlatforms.length === platformOptions.length) {
+      setSelectedPlatforms([]);
+    } else {
+      setSelectedPlatforms(platformOptions.map((p) => p.id));
+    }
   };
 
   const handleUpload = () => {
@@ -161,38 +166,77 @@ const Upload = () => {
         <Stack direction="column" spacing={2.5} height="100%">
           {/* Platform Selection */}
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" mb={2}>
-              {t('upload.selectPlatforms')}
-            </Typography>
-            <FormGroup>
-              {platformOptions.map((platform) => (
-                <FormControlLabel
-                  key={platform.id}
-                  control={
-                    <Checkbox
-                      checked={selectedPlatforms.includes(platform.id)}
-                      onChange={() => handlePlatformToggle(platform.id)}
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h5">{t('upload.selectPlatforms')}</Typography>
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleSelectAll}
+                sx={{ textTransform: 'none', fontWeight: 600, px: 2, py: 0.5, borderRadius: 2 }}
+              >
+                {selectedPlatforms.length === platformOptions.length
+                  ? t('upload.deselectAll')
+                  : t('upload.selectAll')}
+              </Button>
+            </Stack>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 2,
+              }}
+            >
+              {platformOptions.map((platform) => {
+                const isSelected = selectedPlatforms.includes(platform.id);
+                return (
+                  <Paper
+                    key={platform.id}
+                    elevation={0}
+                    onClick={() => handlePlatformToggle(platform.id)}
+                    sx={{
+                      p: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      border: 2,
+                      borderColor: isSelected ? 'primary.main' : 'divider',
+                      backgroundColor: isSelected ? 'primary.lighter' : 'transparent',
+                      borderRadius: 3,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        borderColor: isSelected ? 'primary.main' : 'primary.light',
+                        backgroundColor: isSelected ? 'primary.lighter' : 'action.hover',
+                      },
+                    }}
+                  >
+                    <IconifyIcon
+                      icon={platform.icon}
                       sx={{
+                        fontSize: 28,
                         color: platform.color,
-                        '&.Mui-checked': { color: platform.color },
+                        mr: 1.5,
+                        opacity: isSelected ? 1 : 0.7,
+                        filter: isSelected ? 'none' : 'grayscale(100%)',
                       }}
                     />
-                  }
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={isSelected ? 700 : 500}
+                      color={isSelected ? 'text.primary' : 'text.secondary'}
+                      sx={{ flexGrow: 1 }}
+                    >
+                      {platform.name}
+                    </Typography>
+                    {isSelected && (
                       <IconifyIcon
-                        icon={platform.icon}
-                        sx={{ fontSize: 20, color: platform.color }}
+                        icon="ic:round-check-circle"
+                        sx={{ fontSize: 24, color: 'primary.main' }}
                       />
-                      <Typography variant="body2" fontWeight={600}>
-                        {platform.name}
-                      </Typography>
-                    </Stack>
-                  }
-                  sx={{ mb: 0.5 }}
-                />
-              ))}
-            </FormGroup>
+                    )}
+                  </Paper>
+                );
+              })}
+            </Box>
           </Paper>
 
           {/* Thumbnail Upload */}
