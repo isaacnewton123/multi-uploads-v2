@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -8,6 +8,8 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import IconifyIcon from 'components/base/IconifyIcon';
 import paths from 'routes/paths';
 
@@ -16,8 +18,42 @@ interface User {
 }
 
 const SignUp = () => {
-  const [user, setUser] = useState<User>({ name: '', email: '', password: '' });
+  const [user, setUser] = useState<User>({
+    name: '',
+    email: '',
+    verificationCode: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
+
+  const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') return;
+    setOpenSnackbar(false);
+  };
+
+  const showNotification = (message: string, severity: 'success' | 'error' | 'info') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setOpenSnackbar(true);
+  };
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUser({ ...user, [e.target.name]: e.target.value });
@@ -25,37 +61,34 @@ const SignUp = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (user.password !== user.confirmPassword) {
+      showNotification("Passwords don't match!", 'error');
+      return;
+    }
     console.log(user);
+  };
+
+  const handleSendCode = () => {
+    if (!user.email) {
+      showNotification('Please enter your email first to receive the code.', 'error');
+      return;
+    }
+    setCodeSent(true);
+    setCountdown(60);
+    showNotification(`A verification code has been sent to ${user.email}`, 'success');
   };
 
   return (
     <Stack
       mx="auto"
-      width={410}
-      height="auto"
-      minHeight={800}
+      width={1}
+      maxWidth={410}
+      minHeight="100%"
       direction="column"
       alignItems="center"
-      justifyContent="space-between"
+      py={{ xs: 4, md: 0 }}
     >
-      <Box width={1}>
-        <Button
-          variant="text"
-          component={Link}
-          href="/"
-          sx={{ ml: -1.75, pl: 1, pr: 2 }}
-          startIcon={
-            <IconifyIcon
-              icon="ic:round-keyboard-arrow-left"
-              sx={(theme) => ({ fontSize: `${theme.typography.h3.fontSize} !important` })}
-            />
-          }
-        >
-          Back to dashboard
-        </Button>
-      </Box>
-
-      <Box width={1}>
+      <Box width={1} my="auto" py={{ xs: 3, md: 5 }}>
         <Typography variant="h3">Sign Up</Typography>
         <Typography mt={1.5} variant="body2" color="text.disabled">
           Join us and start your journey today!
@@ -111,6 +144,40 @@ const SignUp = () => {
             required
           />
           <TextField
+            id="verificationCode"
+            name="verificationCode"
+            type="text"
+            label="Verification Code"
+            value={user.verificationCode}
+            onChange={handleInputChange}
+            variant="filled"
+            placeholder="Enter 6-digit code"
+            sx={{ mt: 6 }}
+            fullWidth
+            required
+            helperText={codeSent ? 'Verification code sent to your email.' : ''}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button
+                    variant="text"
+                    color="primary"
+                    onClick={handleSendCode}
+                    disabled={countdown > 0 || !user.email}
+                    sx={{ fontWeight: 600, mr: -1 }}
+                  >
+                    {countdown > 0
+                      ? `Resend in ${countdown}s`
+                      : codeSent
+                        ? 'Resend Code'
+                        : 'Send Code'}
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <TextField
             id="password"
             name="password"
             label="Password"
@@ -148,6 +215,52 @@ const SignUp = () => {
             }}
           />
 
+          <TextField
+            id="confirmPassword"
+            name="confirmPassword"
+            label="Confirm Password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={user.confirmPassword}
+            onChange={handleInputChange}
+            variant="filled"
+            placeholder="Resubmit password"
+            autoComplete="new-password"
+            sx={{ mt: 6 }}
+            fullWidth
+            required
+            error={Boolean(user.confirmPassword) && user.password !== user.confirmPassword}
+            helperText={
+              Boolean(user.confirmPassword) && user.password !== user.confirmPassword
+                ? "Passwords don't match"
+                : ''
+            }
+            InputProps={{
+              endAdornment: (
+                <InputAdornment
+                  position="end"
+                  sx={{
+                    opacity: user.confirmPassword ? 1 : 0,
+                    pointerEvents: user.confirmPassword ? 'auto' : 'none',
+                  }}
+                >
+                  <IconButton
+                    aria-label="toggle confirm password visibility"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    sx={{ border: 'none', bgcolor: 'transparent !important' }}
+                    edge="end"
+                  >
+                    <IconifyIcon
+                      icon={
+                        showConfirmPassword ? 'ic:outline-visibility' : 'ic:outline-visibility-off'
+                      }
+                      color="neutral.main"
+                    />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
           <Button type="submit" variant="contained" size="large" sx={{ mt: 3 }} fullWidth>
             Sign Up
           </Button>
@@ -166,9 +279,31 @@ const SignUp = () => {
         </Typography>
       </Box>
 
-      <Typography variant="body2" color="text.disabled" fontWeight={500}>
+      <Typography
+        variant="body2"
+        color="text.disabled"
+        fontWeight={500}
+        mt={{ xs: 4, md: 'auto' }}
+        pb={{ xs: 0, md: 4 }}
+      >
         © 2024 MultiUploads. All rights reserved.
       </Typography>
+
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          variant="filled"
+          sx={{ width: '100%', color: 'white' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 };

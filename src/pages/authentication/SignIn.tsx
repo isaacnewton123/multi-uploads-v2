@@ -33,31 +33,14 @@ const SignIn = () => {
   return (
     <Stack
       mx="auto"
-      width={410}
-      height="auto"
-      minHeight={800}
+      width={1}
+      maxWidth={410}
+      minHeight="100%"
       direction="column"
       alignItems="center"
-      justifyContent="space-between"
+      py={{ xs: 4, md: 0 }}
     >
-      <Box width={1}>
-        <Button
-          variant="text"
-          component={Link}
-          href="/"
-          sx={{ ml: -1.75, pl: 1, pr: 2 }}
-          startIcon={
-            <IconifyIcon
-              icon="ic:round-keyboard-arrow-left"
-              sx={(theme) => ({ fontSize: `${theme.typography.h3.fontSize} !important` })}
-            />
-          }
-        >
-          Back to dashboard
-        </Button>
-      </Box>
-
-      <Box width={1}>
+      <Box width={1} my="auto" py={{ xs: 3, md: 5 }}>
         <Typography variant="h3">Sign In</Typography>
         <Typography mt={1.5} variant="body2" color="text.disabled">
           Enter your email and password to sign in!
@@ -165,7 +148,13 @@ const SignIn = () => {
         </Typography>
       </Box>
 
-      <Typography variant="body2" color="text.disabled" fontWeight={500}>
+      <Typography
+        variant="body2"
+        color="text.disabled"
+        fontWeight={500}
+        mt={{ xs: 4, md: 'auto' }}
+        pb={{ xs: 0, md: 4 }}
+      >
         © 2024 MultiUploads. All rights reserved.
       </Typography>
     </Stack>
