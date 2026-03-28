@@ -25,16 +25,16 @@
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
-| **Build Tool** | [Vite 5](https://vitejs.dev/) |
-| **UI Library** | [MUI (Material UI) v5](https://mui.com/) |
-| **Routing** | [React Router v6](https://reactrouter.com/) |
-| **Icons** | [Iconify](https://iconify.design/) via `@iconify/react` |
-| **Styling** | MUI Theme + Emotion (`@emotion/react`, `@emotion/styled`) |
-| **i18n** | Custom lightweight context-based solution |
-| **Linting** | ESLint + Prettier |
+| Layer          | Technology                                                                     |
+| -------------- | ------------------------------------------------------------------------------ |
+| **Framework**  | [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
+| **Build Tool** | [Vite 5](https://vitejs.dev/)                                                  |
+| **UI Library** | [MUI (Material UI) v5](https://mui.com/)                                       |
+| **Routing**    | [React Router v6](https://reactrouter.com/)                                    |
+| **Icons**      | [Iconify](https://iconify.design/) via `@iconify/react`                        |
+| **Styling**    | MUI Theme + Emotion (`@emotion/react`, `@emotion/styled`)                      |
+| **i18n**       | Custom lightweight context-based solution                                      |
+| **Linting**    | ESLint + Prettier                                                              |
 
 ## 📁 Project Structure
 
@@ -134,18 +134,19 @@ npm run lint:fix
 
 ## 🌐 Supported Platforms
 
-| Platform | Format |
-|----------|--------|
-| YouTube Shorts | Vertical (9:16), max 60s |
-| Facebook Reels | Vertical (9:16), max 60s |
+| Platform        | Format                   |
+| --------------- | ------------------------ |
+| YouTube Shorts  | Vertical (9:16), max 60s |
+| Facebook Reels  | Vertical (9:16), max 60s |
 | Instagram Reels | Vertical (9:16), max 60s |
-| TikTok | Vertical (9:16), max 60s |
+| TikTok          | Vertical (9:16), max 60s |
 
 ## 🌍 Internationalization
 
 The app supports **English** and **Chinese (中文)** out of the box. Language can be switched via the language selector in the top bar.
 
 To add a new language:
+
 1. Open `src/i18n/I18nContext.tsx`
 2. Add a new locale key to the `Locale` type
 3. Add the translation dictionary in the `translations` object
@@ -153,16 +154,16 @@ To add a new language:
 
 ## 📝 Available Routes
 
-| Route | Page | Description |
-|-------|------|-------------|
-| `/` | Dashboard | Upload stats, platform status, recent uploads |
-| `/upload` | Upload | Drag-and-drop video upload with platform selection |
-| `/my-videos` | My Videos | Video library with status tracking |
-| `/profile` | Profile | User profile overview |
-| `/settings` | Settings | Account, notifications, password, danger zone |
-| `/authentication/sign-in` | Sign In | Login page |
-| `/authentication/sign-up` | Sign Up | Registration page |
-| `*` | 404 | Page not found |
+| Route                     | Page      | Description                                        |
+| ------------------------- | --------- | -------------------------------------------------- |
+| `/`                       | Dashboard | Upload stats, platform status, recent uploads      |
+| `/upload`                 | Upload    | Drag-and-drop video upload with platform selection |
+| `/my-videos`              | My Videos | Video library with status tracking                 |
+| `/profile`                | Profile   | User profile overview                              |
+| `/settings`               | Settings  | Account, notifications, password, danger zone      |
+| `/authentication/sign-in` | Sign In   | Login page                                         |
+| `/authentication/sign-up` | Sign Up   | Registration page                                  |
+| `*`                       | 404       | Page not found                                     |
 
 ## 📄 License
 

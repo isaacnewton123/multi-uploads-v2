@@ -2,6 +2,8 @@ export const rootPaths = {
   root: '/',
   pagesRoot: 'pages',
   authRoot: 'authentication',
+  adminRoot: '/admin',
+  adminAuthRoot: '/admin/auth',
 };
 
 export default {
@@ -11,4 +13,15 @@ export default {
   myVideos: '/my-videos',
   profile: '/profile',
   settings: '/settings',
+
+  // Admin Routes
+  adminSignin: '/admin/auth/sign-in',
+  adminDashboard: '/admin',
+  adminUsers: '/admin/users',
+  adminTransactions: '/admin/transactions',
+  adminUploads: '/admin/uploads',
+  adminSubscriptions: '/admin/subscriptions',
+  adminAnnouncements: '/admin/announcements',
+  adminErrors: '/admin/errors',
+  adminSettings: '/admin/settings',
 };
