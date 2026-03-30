@@ -1,92 +1,39 @@
+import { useState, useEffect, useCallback } from 'react';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { useI18n } from 'i18n/I18nContext';
 
-interface VideoEntry {
-  id: number;
-  title: string;
-  platforms: { name: string; icon: string; color: string }[];
-  date: string;
-  status: 'published' | 'processing' | 'failed';
-  views: number;
+interface PlatformTarget {
+  platform: 'youtube' | 'facebook' | 'instagram' | 'tiktok';
+  status: string;
 }
 
-const videosData: VideoEntry[] = [
-  {
-    id: 1,
-    title: 'Morning Routine Tips #shorts',
-    platforms: [
-      { name: 'YouTube', icon: 'mdi:youtube', color: '#FF0000' },
-      { name: 'TikTok', icon: 'ic:baseline-tiktok', color: '#000000' },
-      { name: 'Instagram', icon: 'mdi:instagram', color: '#E4405F' },
-    ],
-    date: 'Mar 20, 2026',
-    status: 'published',
-    views: 12400,
-  },
-  {
-    id: 2,
-    title: 'Quick Recipe: 60-Second Pasta',
-    platforms: [
-      { name: 'YouTube', icon: 'mdi:youtube', color: '#FF0000' },
-      { name: 'Facebook', icon: 'mdi:facebook', color: '#1877F2' },
-    ],
-    date: 'Mar 19, 2026',
-    status: 'published',
-    views: 8750,
-  },
-  {
-    id: 3,
-    title: 'Sunset Timelapse 🌅',
-    platforms: [
-      { name: 'TikTok', icon: 'ic:baseline-tiktok', color: '#000000' },
-      { name: 'Instagram', icon: 'mdi:instagram', color: '#E4405F' },
-    ],
-    date: 'Mar 18, 2026',
-    status: 'failed',
-    views: 0,
-  },
-  {
-    id: 4,
-    title: 'Life Hack: Organize Your Desk',
-    platforms: [
-      { name: 'YouTube', icon: 'mdi:youtube', color: '#FF0000' },
-      { name: 'Facebook', icon: 'mdi:facebook', color: '#1877F2' },
-      { name: 'TikTok', icon: 'ic:baseline-tiktok', color: '#000000' },
-      { name: 'Instagram', icon: 'mdi:instagram', color: '#E4405F' },
-    ],
-    date: 'Mar 17, 2026',
-    status: 'processing',
-    views: 3200,
-  },
-  {
-    id: 5,
-    title: 'Dance Challenge 2026 🔥',
-    platforms: [{ name: 'TikTok', icon: 'ic:baseline-tiktok', color: '#000000' }],
-    date: 'Mar 16, 2026',
-    status: 'published',
-    views: 45200,
-  },
-  {
-    id: 6,
-    title: 'Travel Vlog: Tokyo Street Food',
-    platforms: [
-      { name: 'YouTube', icon: 'mdi:youtube', color: '#FF0000' },
-      { name: 'Instagram', icon: 'mdi:instagram', color: '#E4405F' },
-    ],
-    date: 'Mar 15, 2026',
-    status: 'published',
-    views: 22100,
-  },
-];
+interface VideoEntry {
+  _id: string;
+  title: string;
+  platforms: PlatformTarget[];
+  createdAt: string;
+  status: 'published' | 'processing' | 'failed' | 'partial';
+  views: number;
+  thumbnailUrl?: string;
+}
 
-const statusColors = {
+const platformIcons = {
+  youtube: { icon: 'mdi:youtube', color: '#FF0000' },
+  facebook: { icon: 'mdi:facebook', color: '#1877F2' },
+  instagram: { icon: 'mdi:instagram', color: '#E4405F' },
+  tiktok: { icon: 'ic:baseline-tiktok', color: '#000000' },
+};
+
+const statusColors: Record<string, { bg: string; text: string }> = {
   published: { bg: 'success.lighter', text: 'success.main' },
+  partial: { bg: '#e0f2fe', text: '#0284c7' }, // Explicit blue colors for Partial
   processing: { bg: 'warning.lighter', text: 'warning.main' },
   failed: { bg: 'error.lighter', text: 'error.main' },
 };
@@ -98,6 +45,30 @@ const formatViews = (views: number) => {
 
 const MyVideos = () => {
   const { t } = useI18n();
+  const [videosData, setVideosData] = useState<VideoEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+
+  const fetchVideos = useCallback(async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/videos');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setVideosData(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch videos:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVideos();
+    // Refresh periodically for real-time status updates
+    const interval = setInterval(fetchVideos, 5000);
+    return () => clearInterval(interval);
+  }, [fetchVideos]);
 
   return (
     <Grid container spacing={2.5}>
@@ -160,110 +131,205 @@ const MyVideos = () => {
             {t('myVideos.allVideos')}
           </Typography>
           <Stack direction="column" spacing={2}>
-            {videosData.map((video) => {
-              const statusStyle = statusColors[video.status];
-              return (
-                <Stack
-                  key={video.id}
-                  direction={{ xs: 'column', sm: 'row' }}
-                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                  justifyContent="space-between"
-                  spacing={{ xs: 1.5, sm: 2 }}
-                  p={2}
-                  borderRadius={2}
-                  bgcolor="info.lighter"
-                  sx={{ overflow: 'hidden' }}
-                >
-                  {/* Left: Thumbnail + Title */}
-                  <Stack direction="row" alignItems="center" spacing={2} minWidth={0} flex={1}>
-                    <Stack
-                      direction="column"
-                      alignItems="center"
-                      justifyContent="center"
-                      sx={{ width: 48, height: 48, minWidth: 48 }}
-                      borderRadius={2}
-                      bgcolor="background.paper"
-                    >
-                      <IconifyIcon
-                        icon="ic:round-play-circle-outline"
-                        sx={{ fontSize: 24, color: 'primary.main' }}
-                      />
-                    </Stack>
-                    <Box minWidth={0} flex={1}>
-                      <Typography
-                        variant="subtitle1"
-                        fontWeight={600}
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {video.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.disabled">
-                        {video.date}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  {/* Right: Platforms + Views + Status */}
+            {loading ? (
+              <Stack alignItems="center" py={4}>
+                <CircularProgress />
+              </Stack>
+            ) : videosData.length === 0 ? (
+              <Stack alignItems="center" py={4}>
+                <Typography color="text.secondary">No videos uploaded yet</Typography>
+              </Stack>
+            ) : (
+              videosData.map((video) => {
+                const statusStyle = statusColors[video.status] || statusColors.processing;
+                return (
                   <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                    flexShrink={0}
-                    flexWrap="wrap"
-                    useFlexGap
-                    sx={{ rowGap: 1 }}
+                    key={video._id}
+                    direction={{ xs: 'column', sm: 'row' }}
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    justifyContent="space-between"
+                    spacing={{ xs: 1.5, sm: 2 }}
+                    p={2}
+                    borderRadius={2}
+                    bgcolor="info.lighter"
+                    sx={{ overflow: 'hidden' }}
                   >
-                    {/* Platform icons */}
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      {video.platforms.map((platform) => (
-                        <Stack
-                          key={platform.name}
-                          direction="column"
-                          alignItems="center"
-                          justifyContent="center"
-                          width={28}
-                          height={28}
-                          borderRadius="50%"
-                          sx={{ bgcolor: `${platform.color}15` }}
-                        >
+                    {/* Left: Thumbnail + Title */}
+                    <Stack direction="row" alignItems="center" spacing={2} minWidth={0} flex={1}>
+                      <Stack
+                        direction="column"
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          minWidth: 48,
+                          overflow: 'hidden',
+                          backgroundImage: video.thumbnailUrl
+                            ? `url(${video.thumbnailUrl})`
+                            : 'none',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                        borderRadius={2}
+                        bgcolor="background.paper"
+                      >
+                        {!video.thumbnailUrl && (
                           <IconifyIcon
-                            icon={platform.icon}
-                            sx={{ fontSize: 16, color: platform.color }}
+                            icon="ic:round-play-circle-outline"
+                            sx={{ fontSize: 24, color: 'primary.main' }}
                           />
-                        </Stack>
-                      ))}
+                        )}
+                      </Stack>
+                      <Box minWidth={0} flex={1}>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight={600}
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {video.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled">
+                          {new Date(video.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </Typography>
+                      </Box>
                     </Stack>
 
-                    {/* Views */}
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <IconifyIcon
-                        icon="ic:round-visibility"
-                        sx={{ fontSize: 18, color: 'text.disabled' }}
-                      />
-                      <Typography variant="body2" color="text.disabled" fontWeight={500}>
-                        {formatViews(video.views)}
-                      </Typography>
-                    </Stack>
+                    {/* Right: Platforms + Views + Status */}
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      flexShrink={0}
+                      flexWrap="wrap"
+                      useFlexGap
+                      sx={{ rowGap: 1 }}
+                    >
+                      {/* Platform icons */}
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        {video.platforms.map((p) => {
+                          const platformInfo = platformIcons[p.platform] || {
+                            icon: 'mdi:help',
+                            color: '#999',
+                          };
+                          const isFailed = p.status === 'failed';
+                          return (
+                            <Stack
+                              key={p.platform}
+                              direction="column"
+                              alignItems="center"
+                              justifyContent="center"
+                              width={28}
+                              height={28}
+                              borderRadius="50%"
+                              sx={{
+                                bgcolor: isFailed ? 'error.lighter' : `${platformInfo.color}15`,
+                                border: isFailed ? 1 : 0,
+                                borderColor: 'error.main',
+                              }}
+                              title={`${p.platform} (${p.status})`}
+                            >
+                              <IconifyIcon
+                                icon={platformInfo.icon}
+                                sx={{
+                                  fontSize: 16,
+                                  color: isFailed ? 'error.main' : platformInfo.color,
+                                }}
+                              />
+                            </Stack>
+                          );
+                        })}
+                      </Stack>
 
-                    {/* Status chip */}
-                    <Chip
-                      label={t(`myVideos.${video.status}`)}
-                      size="small"
-                      sx={{
-                        fontWeight: 600,
-                        bgcolor: statusStyle.bg,
-                        color: statusStyle.text,
-                        minWidth: 85,
-                      }}
-                    />
+                      {/* Views */}
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <IconifyIcon
+                          icon="ic:round-visibility"
+                          sx={{ fontSize: 18, color: 'text.disabled' }}
+                        />
+                        <Typography variant="body2" color="text.disabled" fontWeight={500}>
+                          {formatViews(video.views)}
+                        </Typography>
+                      </Stack>
+
+                      {/* Status chip */}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip
+                          label={t(`myVideos.${video.status}`)}
+                          size="small"
+                          sx={{
+                            fontWeight: 600,
+                            bgcolor: statusStyle.bg,
+                            color: statusStyle.text,
+                            minWidth: 85,
+                          }}
+                        />
+                        {(video.status === 'failed' || video.status === 'partial') && (
+                          <Box
+                            component="button"
+                            disabled={retryingIds.has(video._id)}
+                            onClick={async () => {
+                              if (retryingIds.has(video._id)) return;
+                              setRetryingIds((prev) => new Set(prev).add(video._id));
+                              try {
+                                const res = await fetch(
+                                  `http://localhost:4000/api/videos/${video._id}/retry`,
+                                  { method: 'POST' },
+                                );
+                                const data = await res.json();
+                                if (data.success) fetchVideos();
+                              } catch (e) {
+                                console.error('Retry failed', e);
+                              } finally {
+                                setRetryingIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(video._id);
+                                  return next;
+                                });
+                              }
+                            }}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 28,
+                              height: 28,
+                              borderRadius: 1,
+                              border: 0,
+                              bgcolor: 'primary.lighter',
+                              color: 'primary.main',
+                              cursor: retryingIds.has(video._id) ? 'not-allowed' : 'pointer',
+                              opacity: retryingIds.has(video._id) ? 0.6 : 1,
+                              '&:hover': {
+                                bgcolor: retryingIds.has(video._id)
+                                  ? 'primary.lighter'
+                                  : 'primary.light',
+                                color: retryingIds.has(video._id) ? 'primary.main' : 'primary.dark',
+                              },
+                            }}
+                            title="Retry Failed Uploads"
+                          >
+                            {retryingIds.has(video._id) ? (
+                              <CircularProgress size={14} color="inherit" />
+                            ) : (
+                              <IconifyIcon icon="mdi:refresh" sx={{ fontSize: 18 }} />
+                            )}
+                          </Box>
+                        )}
+                      </Stack>
+                    </Stack>
                   </Stack>
-                </Stack>
-              );
-            })}
+                );
+              })
+            )}
           </Stack>
         </Paper>
       </Grid>

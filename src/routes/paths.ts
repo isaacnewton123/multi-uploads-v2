@@ -13,6 +13,8 @@ export default {
   myVideos: '/my-videos',
   profile: '/profile',
   settings: '/settings',
+  upgrade: '/billing',
+  billing: '/billing',
 
   // Admin Routes
   adminSignin: '/admin/auth/sign-in',

@@ -36,6 +36,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'dashboard.distributeDesc': 'Distribute your video to all platforms in one click',
     'dashboard.startUpload': 'Start Upload',
     'dashboard.recentUploads': 'Recent Uploads',
+    'dashboard.justNow': 'Just now',
+    'dashboard.noUploads': 'No uploads yet. Start uploading your first video!',
+    'dashboard.published': 'Published',
 
     // Upload page
     'upload.title': 'Upload Video',
@@ -55,6 +58,17 @@ const translations: Record<Locale, Record<string, string>> = {
     'upload.schedule': 'Schedule',
     'upload.scheduleHint': 'Leave empty to publish immediately after processing',
     'upload.uploadButton': 'Upload & Distribute',
+    'upload.uploading': 'Uploading...',
+    'upload.processing': 'Processing...',
+    'upload.done': 'Done',
+    'upload.queued': 'Upload Queued!',
+    'upload.queuedDesc':
+      "Your video has been received and is now in the processing queue. We'll distribute it to your selected platforms automatically.",
+    'upload.close': 'Close',
+    'upload.goToMyVideos': 'Go to My Videos',
+    'upload.titlePlaceholder': 'Give your video a catchy title...',
+    'upload.descriptionPlaceholder': 'Describe your video...',
+    'upload.tagsPlaceholder': 'Enter tags separated by commas (e.g., cooking, recipe, shorts)',
     'upload.selectAll': 'Select All',
     'upload.deselectAll': 'Deselect All',
 
@@ -65,6 +79,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'myVideos.published': 'Published',
     'myVideos.processing': 'Processing',
     'myVideos.failed': 'Failed',
+    'myVideos.partial': 'Partial',
     'myVideos.allVideos': 'All Videos',
 
     // Profile page
@@ -119,6 +134,35 @@ const translations: Record<Locale, Record<string, string>> = {
     'sidebar.upgradeDesc1': 'Get more daily uploads!',
     'sidebar.upgradeDesc2': 'Upload to all platforms at once.',
 
+    // Upgrade / Pricing
+    'upgrade.title': 'Choose Your Plan',
+    'upgrade.description':
+      'Select the perfect plan to streamline your multi-platform content distribution.',
+    'upgrade.tierBasic': 'Basic',
+    'upgrade.tierPremium': 'Premium',
+    'upgrade.tierEnterprise': 'Enterprise',
+    'upgrade.dailyUploadsText': 'Daily Uploads',
+    'upgrade.featDaily': 'Daily Upload',
+    'upgrade.featMetadata': 'Basic video metadata',
+    'upgrade.featThumbnails': 'Custom thumbnails',
+    'upgrade.featSupportStandard': 'Standard support via AI & Live Chat',
+    'upgrade.featSingleUser': 'Single user access',
+    'upgrade.featAllBasic': 'All Basic features',
+    'upgrade.featAdvSettings': 'Advanced video settings',
+    'upgrade.featSubtitles': 'Upload subtitles & captions',
+    'upgrade.featChapters': 'Define video chapters',
+    'upgrade.featEndScreens': 'Add end screens & cards',
+    'upgrade.featScheduled': 'Scheduled uploads',
+    'upgrade.featTemplates': 'Video templates',
+    'upgrade.featSupportPriority': 'Priority AI & Live Chat support',
+    'upgrade.featAllPremium': 'All Premium features',
+    'upgrade.featWorkflows': 'Custom upload workflows',
+    'upgrade.featAnalytics': 'Analytics & Insights',
+    'upgrade.featAPI': 'API access',
+    'upgrade.featCustomDev': 'Custom features development',
+    'upgrade.featDedicatedMgr': 'Dedicated support manager',
+    'upgrade.cta': 'Select Plan',
+
     // Footer
     'footer.allRights': 'All rights reserved.',
 
@@ -129,6 +173,19 @@ const translations: Record<Locale, Record<string, string>> = {
     // Errors
     'errors.pageNotFound': 'Page Not Found',
     'errors.pageNotFoundDescription': "Oops! We can't seem to find the page you're looking for.",
+
+    // Topbar Notifications
+    'topbar.notifications': 'Notifications',
+    'topbar.markAllRead': 'Mark all read',
+    'topbar.announce': 'Announce',
+    'topbar.system': 'System',
+    'topbar.noNotifications': 'No notifications to show.',
+
+    // System Alerts
+    'topbar.uploadSuccess': 'Upload Success',
+    'topbar.uploadFailed': 'Upload Failed',
+    'topbar.uploadSuccessMsg': '"{title}" successfully uploaded to {platform}',
+    'topbar.uploadFailedMsg': 'Failed to upload "{title}" to {platform}.',
   },
 
   zh: {
@@ -156,6 +213,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'dashboard.distributeDesc': '一键将您的视频分发到所有平台',
     'dashboard.startUpload': '开始上传',
     'dashboard.recentUploads': '最近上传',
+    'dashboard.justNow': '刚刚',
+    'dashboard.noUploads': '还没有上传内容，快去上传您的第一个视频吧！',
+    'dashboard.published': '已发布',
 
     // Upload page
     'upload.title': '上传视频',
@@ -174,6 +234,16 @@ const translations: Record<Locale, Record<string, string>> = {
     'upload.schedule': '定时发布',
     'upload.scheduleHint': '留空则在处理完成后立即发布',
     'upload.uploadButton': '上传并分发',
+    'upload.uploading': '上传中...',
+    'upload.processing': '处理中...',
+    'upload.done': '完成',
+    'upload.queued': '上传已排队！',
+    'upload.queuedDesc': '您的视频已接收，现在正在处理队列中。我们将自动分发到您选择的平台。',
+    'upload.close': '关闭',
+    'upload.goToMyVideos': '前往我的视频',
+    'upload.titlePlaceholder': '为您的视频起个吸引人的标题...',
+    'upload.descriptionPlaceholder': '描述您的视频内容...',
+    'upload.tagsPlaceholder': '用逗号分隔标签（例如：烹饪、食谱、短视频）',
     'upload.selectAll': '全选',
     'upload.deselectAll': '取消全选',
 
@@ -184,6 +254,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'myVideos.published': '已发布',
     'myVideos.processing': '处理中',
     'myVideos.failed': '失败',
+    'myVideos.partial': '部分成功',
     'myVideos.allVideos': '全部视频',
 
     // Profile page
@@ -237,6 +308,34 @@ const translations: Record<Locale, Record<string, string>> = {
     'sidebar.upgradeDesc1': '获取更多每日上传次数！',
     'sidebar.upgradeDesc2': '一键上传到所有平台。',
 
+    // Upgrade / Pricing
+    'upgrade.title': '选择您的计划',
+    'upgrade.description': '为您的多平台内容分发选择最合适的发布计划。',
+    'upgrade.tierBasic': '基础版',
+    'upgrade.tierPremium': '高级版',
+    'upgrade.tierEnterprise': '企业版',
+    'upgrade.dailyUploadsText': '次每日上传',
+    'upgrade.featDaily': '每日上传',
+    'upgrade.featMetadata': '基础视频元数据',
+    'upgrade.featThumbnails': '自定义缩略图',
+    'upgrade.featSupportStandard': 'AI及在线聊天标准支持',
+    'upgrade.featSingleUser': '单人账户连接',
+    'upgrade.featAllBasic': '包含所有基础版功能',
+    'upgrade.featAdvSettings': '高级视频设置',
+    'upgrade.featSubtitles': '上传字幕及标题',
+    'upgrade.featChapters': '自定义视频章节',
+    'upgrade.featEndScreens': '添加片尾及卡片',
+    'upgrade.featScheduled': '定时发布上传',
+    'upgrade.featTemplates': '视频预设模板',
+    'upgrade.featSupportPriority': '专属AI及在线聊天支持',
+    'upgrade.featAllPremium': '包含所有高级版功能',
+    'upgrade.featWorkflows': '自定义上传工作流',
+    'upgrade.featAnalytics': '数据分析与洞察',
+    'upgrade.featAPI': 'API 接口管理',
+    'upgrade.featCustomDev': '定制功能开发',
+    'upgrade.featDedicatedMgr': '专属技术支持经理',
+    'upgrade.cta': '选择计划',
+
     // Footer
     'footer.allRights': '版权所有。',
 
@@ -247,6 +346,19 @@ const translations: Record<Locale, Record<string, string>> = {
     // Errors
     'errors.pageNotFound': '页面未找到',
     'errors.pageNotFoundDescription': '哎呀！我们找不到您要找的页面。',
+
+    // Topbar Notifications
+    'topbar.notifications': '通知',
+    'topbar.markAllRead': '全部标为已读',
+    'topbar.announce': '公告',
+    'topbar.system': '系统',
+    'topbar.noNotifications': '暂无新通知。',
+
+    // System Alerts
+    'topbar.uploadSuccess': '上传成功',
+    'topbar.uploadFailed': '上传失败',
+    'topbar.uploadSuccessMsg': '"{title}" 已成功上传到 {platform}',
+    'topbar.uploadFailedMsg': '未能将 "{title}" 上传到 {platform}。',
   },
 };
 

@@ -12,6 +12,7 @@ const Profile = lazy(() => import('pages/profile/Profile'));
 const Settings = lazy(() => import('pages/settings/Settings'));
 const SignIn = lazy(() => import('pages/authentication/SignIn'));
 const SignUp = lazy(() => import('pages/authentication/SignUp'));
+const Billing = lazy(() => import('pages/billing/Billing'));
 const Page404 = lazy(() => import('pages/errors/Page404'));
 
 // Admin Routes
@@ -69,6 +70,14 @@ export const routes = [
             element: <Settings />,
           },
         ],
+      },
+      {
+        path: 'billing',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Billing />
+          </Suspense>
+        ),
       },
       {
         path: rootPaths.authRoot,

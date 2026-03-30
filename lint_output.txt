@@ -1,0 +1,7 @@
+
+C:\Users\Isaac Newton\Documents\multiuploads\frontend\src\layouts\main-layout\topbar\Notifications.tsx
+  194:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 2 problems (2 errors, 0 warnings)
+

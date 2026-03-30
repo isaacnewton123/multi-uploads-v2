@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -9,30 +9,64 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import IconifyIcon from 'components/base/IconifyIcon';
-import { announcementsData as initialData } from 'data/adminMockData';
 
 const statusStyle: Record<string, { bg: string; text: string }> = {
   Active: { bg: '#E8F5E9', text: '#2E7D32' },
   Expired: { bg: '#EFEBE9', text: '#5D4037' },
 };
 
+export interface AnnouncementEntry {
+  _id: string;
+  title: string;
+  message: string;
+  status: string;
+  date: string;
+}
+
 const Announcements = () => {
-  const [announcements, setAnnouncements] = useState(initialData);
+  const [announcements, setAnnouncements] = useState<AnnouncementEntry[]>([]);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
 
-  const handleSend = () => {
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/announcements');
+      const data = await res.json();
+      if (data.success) {
+        setAnnouncements(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  const handleSend = async () => {
     if (!subject.trim() || !message.trim()) return;
-    const newAnnouncement = {
-      id: announcements.length + 1,
-      title: subject,
-      message,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Active',
-    };
-    setAnnouncements([newAnnouncement, ...announcements]);
-    setSubject('');
-    setMessage('');
+
+    try {
+      const res = await fetch('http://localhost:4000/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: subject.trim(),
+          message: message.trim(),
+          status: 'Active',
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSubject('');
+        setMessage('');
+        fetchAnnouncements();
+      }
+    } catch (err) {
+      console.error('Failed to post announcement:', err);
+    }
   };
 
   return (
@@ -99,7 +133,7 @@ const Announcements = () => {
           {announcements.map((item) => {
             const style = statusStyle[item.status] || statusStyle.Expired;
             return (
-              <Grid item xs={12} sm={6} md={4} xl={3} key={item.id}>
+              <Grid item xs={12} sm={6} md={4} xl={3} key={item._id}>
                 <Paper
                   variant="outlined"
                   sx={{
@@ -130,7 +164,7 @@ const Announcements = () => {
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Typography variant="caption" color="text.disabled" fontWeight={500}>
-                    Posted: {item.date}
+                    Posted: {new Date(item.date).toLocaleDateString()}
                   </Typography>
                 </Paper>
               </Grid>

@@ -5,21 +5,24 @@ import Chip from '@mui/material/Chip';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { useI18n } from 'i18n/I18nContext';
 
-interface PlatformCardProps {
-  name: string;
-  icon: string;
+interface PlatformCount {
   connected: boolean;
-  color: string;
+  published: number;
+  failed: number;
 }
 
-const platformData: PlatformCardProps[] = [
-  { name: 'YouTube Shorts', icon: 'mdi:youtube', connected: true, color: '#FF0000' },
-  { name: 'Facebook Reels', icon: 'mdi:facebook', connected: true, color: '#1877F2' },
-  { name: 'Instagram Reels', icon: 'mdi:instagram', connected: false, color: '#E4405F' },
-  { name: 'TikTok', icon: 'ic:baseline-tiktok', connected: false, color: '#000000' },
+interface PlatformStatusProps {
+  platformCounts: Record<string, PlatformCount>;
+}
+
+const PLATFORMS = [
+  { id: 'youtube', name: 'YouTube Shorts', icon: 'mdi:youtube', color: '#FF0000' },
+  { id: 'facebook', name: 'Facebook Reels', icon: 'mdi:facebook', color: '#1877F2' },
+  { id: 'instagram', name: 'Instagram Reels', icon: 'mdi:instagram', color: '#E4405F' },
+  { id: 'tiktok', name: 'TikTok', icon: 'ic:baseline-tiktok', color: '#000000' },
 ];
 
-const PlatformStatus = () => {
+const PlatformStatus = ({ platformCounts }: PlatformStatusProps) => {
   const { t } = useI18n();
 
   return (
@@ -28,43 +31,50 @@ const PlatformStatus = () => {
         {t('dashboard.platformStatus')}
       </Typography>
       <Stack direction="column" spacing={2}>
-        {platformData.map((platform) => (
-          <Stack
-            key={platform.name}
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            p={2}
-            borderRadius={2}
-            bgcolor="info.lighter"
-          >
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              <Stack
-                direction="column"
-                alignItems="center"
-                justifyContent="center"
-                width={40}
-                height={40}
-                borderRadius="50%"
-                sx={{ bgcolor: `${platform.color}15` }}
-              >
-                <IconifyIcon icon={platform.icon} sx={{ fontSize: 22, color: platform.color }} />
+        {PLATFORMS.map((platform) => {
+          const data = platformCounts[platform.id];
+          const connected = data?.connected ?? false;
+
+          return (
+            <Stack
+              key={platform.id}
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              p={2}
+              borderRadius={2}
+              bgcolor="info.lighter"
+            >
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Stack
+                  direction="column"
+                  alignItems="center"
+                  justifyContent="center"
+                  width={40}
+                  height={40}
+                  borderRadius="50%"
+                  sx={{ bgcolor: `${platform.color}18` }}
+                >
+                  <IconifyIcon icon={platform.icon} sx={{ fontSize: 22, color: platform.color }} />
+                </Stack>
+                <Stack>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {platform.name}
+                  </Typography>
+                </Stack>
               </Stack>
-              <Typography variant="subtitle1" fontWeight={600}>
-                {platform.name}
-              </Typography>
+              <Chip
+                label={connected ? t('dashboard.connected') : t('dashboard.notConnected')}
+                size="small"
+                sx={{
+                  fontWeight: 600,
+                  bgcolor: connected ? 'success.lighter' : 'warning.lighter',
+                  color: connected ? 'success.main' : 'warning.main',
+                }}
+              />
             </Stack>
-            <Chip
-              label={platform.connected ? t('dashboard.connected') : t('dashboard.notConnected')}
-              size="small"
-              sx={{
-                fontWeight: 600,
-                bgcolor: platform.connected ? 'success.lighter' : 'warning.lighter',
-                color: platform.connected ? 'success.main' : 'warning.main',
-              }}
-            />
-          </Stack>
-        ))}
+          );
+        })}
       </Stack>
     </Paper>
   );

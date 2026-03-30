@@ -8,6 +8,7 @@ import MultiUploadsLogo from 'assets/images/LogoWithBG.png';
 import Image from 'components/base/Image';
 import ProfileMenu from './ProfileMenu';
 import LanguageSelect from './LanguageSelect';
+import Notifications from './Notifications';
 
 interface TopbarProps {
   isClosing: boolean;
@@ -59,7 +60,8 @@ const Topbar = ({ isClosing, mobileOpen, setMobileOpen }: TopbarProps) => {
         </Toolbar>
       </Stack>
 
-      <Stack spacing={{ xs: 1.5, sm: 2 }} alignItems="center">
+      <Stack spacing={{ xs: 1.5, sm: 2 }} alignItems="center" direction="row">
+        <Notifications />
         <LanguageSelect />
         <ProfileMenu />
       </Stack>

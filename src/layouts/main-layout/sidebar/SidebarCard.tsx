@@ -28,8 +28,12 @@ const Logo = () => {
   );
 };
 
+import { useNavigate } from 'react-router-dom';
+import paths from 'routes/paths';
+
 const SidebarCard = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
 
   return (
     <Stack
@@ -47,7 +51,12 @@ const SidebarCard = () => {
       })}
     >
       <Logo />
-      <Button sx={{ color: 'info.lighter', fontWeight: 700 }}>{t('sidebar.upgradePremium')}</Button>
+      <Button
+        onClick={() => navigate(paths.billing)}
+        sx={{ color: 'info.lighter', fontWeight: 700 }}
+      >
+        {t('sidebar.upgradePremium')}
+      </Button>
       <Typography variant="body2" color="info.darker" lineHeight={1.75}>
         {t('sidebar.upgradeDesc1')} <br />
         {t('sidebar.upgradeDesc2')}
