@@ -1,170 +1,356 @@
-# MultiUploads
+# MultiUploads — Frontend
 
-<p align="center">
-  <img src="src/assets/images/LogoWithBG.png" alt="MultiUploads Logo" width="80" />
-</p>
-
-<p align="center">
-  <strong>Multi-Platform Short Video Uploader</strong><br/>
-  Upload your short-form videos to YouTube Shorts, Facebook Reels, Instagram Reels, and TikTok — all at once.
-</p>
+> A React + TypeScript dashboard for uploading videos to multiple platforms (YouTube, TikTok, Instagram, Facebook) simultaneously in a single click.
 
 ---
 
-## ✨ Features
+## 📋 Table of Contents
 
-- **Multi-Platform Upload** — Distribute short videos to YouTube Shorts, Facebook Reels, Instagram Reels, and TikTok simultaneously
-- **Dashboard** — Overview of upload stats, platform connection status, and recent uploads
-- **My Videos** — Track all uploaded videos with status (published, processing, failed) and view counts
-- **Upload Page** — Drag & drop video upload with platform selection, video details, thumbnail, and scheduling
-- **Profile & Settings** — Manage account info, notification preferences, and security
-- **i18n Support** — English and Chinese (中文) language support with easy switching
-- **Coming Soon Modal** — Analytics feature placeholder
-- **Responsive Design** — Fully responsive across desktop and mobile
-- **Dark Sidebar** — Modern split-layout with dark sidebar navigation
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Pages & Features](#pages--features)
+  - [User Area](#user-area)
+  - [Admin Area](#admin-area)
+- [Layouts & UI Components](#layouts--ui-components)
+- [Internationalization (I18n)](#internationalization-i18n)
+- [Theme & Design](#theme--design)
+- [Routing](#routing)
+- [Configuration](#configuration)
+- [Roadmap](#roadmap)
 
-## 🛠 Tech Stack
+---
 
-| Layer          | Technology                                                                     |
-| -------------- | ------------------------------------------------------------------------------ |
-| **Framework**  | [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) |
-| **Build Tool** | [Vite 5](https://vitejs.dev/)                                                  |
-| **UI Library** | [MUI (Material UI) v5](https://mui.com/)                                       |
-| **Routing**    | [React Router v6](https://reactrouter.com/)                                    |
-| **Icons**      | [Iconify](https://iconify.design/) via `@iconify/react`                        |
-| **Styling**    | MUI Theme + Emotion (`@emotion/react`, `@emotion/styled`)                      |
-| **i18n**       | Custom lightweight context-based solution                                      |
-| **Linting**    | ESLint + Prettier                                                              |
+## Tech Stack
 
-## 📁 Project Structure
+| Technology | Version | Purpose |
+|---|---|---|
+| **React** | 18.3 | Core UI library |
+| **TypeScript** | 5.2 | Type safety |
+| **Vite** | 5.3 | Build tool & dev server |
+| **Material UI (MUI)** | 5.16 | UI component library |
+| **React Router DOM** | 6.26 | Client-side routing |
+| **Iconify** | 5.0 | Vector icon set |
+| **Bun** | latest | Package manager & script runner |
 
-```
-multiuploads/
-├── backend/                    # Backend (placeholder)
-└── frontend/
-    ├── public/                 # Static assets
-    ├── src/
-    │   ├── assets/images/      # Logos, avatars, auth backgrounds
-    │   ├── components/
-    │   │   ├── base/           # IconifyIcon, Image
-    │   │   ├── common/         # Shared components
-    │   │   ├── loading/        # PageLoader, Progress
-    │   │   └── sections/
-    │   │       └── dashboard/  # Dashboard widgets
-    │   │           ├── upload-stats/
-    │   │           ├── platform-status/
-    │   │           ├── recent-uploads/
-    │   │           └── quick-upload/
-    │   ├── data/               # Static/mock data
-    │   ├── hooks/              # Custom React hooks
-    │   ├── i18n/               # Internationalization (EN/ZH)
-    │   ├── layouts/
-    │   │   ├── auth-layout/    # Auth pages layout
-    │   │   └── main-layout/    # Dashboard layout (sidebar + topbar + footer)
-    │   ├── pages/
-    │   │   ├── authentication/ # SignIn, SignUp
-    │   │   ├── dashboard/      # Main dashboard
-    │   │   ├── upload/         # Video upload page
-    │   │   ├── my-videos/      # Video library
-    │   │   ├── profile/        # User profile
-    │   │   ├── settings/       # Account settings
-    │   │   └── errors/         # 404 page
-    │   ├── providers/          # BreakpointsProvider
-    │   ├── routes/             # Router, paths, sitemap
-    │   └── theme/              # MUI theme customization
-    │       ├── components/     # Component-level overrides
-    │       ├── styles/         # Global styles
-    │       ├── colors.ts
-    │       ├── palette.ts
-    │       ├── shadows.ts
-    │       ├── typography.ts
-    │       └── theme.ts
-    ├── index.html
-    ├── package.json
-    ├── tsconfig.json
-    └── vite.config.ts
-```
+---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js** >= 18
-- **npm** or **bun**
+- **Bun** ≥ 1.0 or **Node.js** ≥ 18
+- MultiUploads backend running at `http://localhost:4000`
 
-### Installation
+### Install & Run
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/multiuploads.git
-cd multiuploads/frontend
-
 # Install dependencies
-npm install
-# or
 bun install
+
+# Start dev server (port 3000)
+bun run dev
+
+# Production build
+bun run build
+
+# Preview production build (port 5000)
+bun run preview
+
+# Lint
+bun run lint
+
+# Lint & auto-fix
+bun run lint:fix
 ```
 
-### Development
+---
 
-```bash
-# Start the dev server (default: http://localhost:3000)
-npm run dev
+## Project Structure
+
+```
+frontend/
+├── public/
+└── src/
+    ├── App.tsx                  # Root component (theme + providers)
+    ├── main.tsx                 # Entry point — React root render
+    │
+    ├── assets/                  # Static images (logo, backgrounds)
+    │
+    ├── components/
+    │   ├── base/                # Atomic components: IconifyIcon, Image
+    │   ├── common/              # Shared components used across pages
+    │   ├── loading/             # PageLoader, Progress (Suspense fallbacks)
+    │   └── sections/
+    │       └── dashboard/       # Widget sections for the Dashboard page
+    │           ├── platform-status/   # Per-platform connection status
+    │           ├── quick-upload/      # Upload shortcut from dashboard
+    │           ├── recent-uploads/    # Recent uploads table
+    │           └── upload-stats/      # Stat cards (uploads today, quota, etc.)
+    │
+    ├── i18n/
+    │   └── I18nContext.tsx      # Context + translation dictionaries (EN / ZH)
+    │
+    ├── layouts/
+    │   ├── main-layout/         # Main layout (Sidebar + Topbar + Footer)
+    │   │   ├── index.tsx        # Layout wrapper
+    │   │   ├── sidebar/         # Collapsible navigation sidebar
+    │   │   │   ├── index.tsx
+    │   │   │   ├── DrawerItems.tsx
+    │   │   │   ├── SidebarCard.tsx  # "Upgrade to Premium" card at sidebar bottom
+    │   │   │   └── list-items/
+    │   │   ├── topbar/          # Top header (notifications, language, profile)
+    │   │   │   ├── index.tsx
+    │   │   │   ├── Notifications.tsx
+    │   │   │   ├── LanguageSelect.tsx
+    │   │   │   └── ProfileMenu.tsx
+    │   │   └── footer/          # Simple copyright footer
+    │   ├── auth-layout/         # Two-column authentication layout
+    │   ├── admin-layout/        # Admin panel layout
+    │   └── admin-auth-layout/   # Admin sign-in layout
+    │
+    ├── pages/
+    │   ├── dashboard/           # User Dashboard
+    │   ├── upload/              # Video Upload page
+    │   │   ├── Upload.tsx
+    │   │   └── UploadSuccessModal.tsx
+    │   ├── my-videos/           # Video list & status
+    │   ├── billing/             # Pricing & Subscription page (standalone)
+    │   │   └── Billing.tsx
+    │   ├── profile/             # User profile
+    │   ├── settings/            # Account settings
+    │   ├── authentication/      # Sign In & Sign Up
+    │   ├── errors/              # 404 page
+    │   └── admin/               # All admin pages (9 pages)
+    │
+    ├── providers/
+    │   └── BreakpointsProvider.tsx  # Breakpoint helper context
+    │
+    ├── routes/
+    │   ├── paths.ts             # All URL path constants
+    │   └── router.tsx           # React Router config (createBrowserRouter)
+    │
+    └── theme/
+        ├── theme.ts             # Main MUI theme configuration
+        ├── palette.ts           # Light/dark color palette
+        ├── typography.ts        # Font & text sizing
+        ├── shadows.ts           # Custom shadows
+        ├── colors.ts            # Raw color tokens
+        ├── components/          # MUI component style overrides
+        └── styles/              # Global CSS / keyframe animations
 ```
 
-### Build
+---
 
-```bash
-# Type-check and build for production
-npm run build
+## Pages & Features
 
-# Preview production build (http://localhost:5000)
-npm run preview
+### User Area
+
+#### 🏠 Dashboard (`/`)
+- **Upload Stats Cards** — uploads today, remaining daily quota, connected platforms count, total videos
+- **Platform Status** — YouTube, TikTok, Instagram, Facebook connection status (inferred from upload history)
+- **Recent Uploads** — table of the last 10 uploads with real-time status
+- **Quick Upload** — shortcut button to the Upload page
+
+#### 📤 Upload (`/upload`)
+- **Drag & Drop Zone** — drag a file or click to browse; displays filename with line-clamping for long names
+- **Multi-platform selection** — choose one or more target platforms simultaneously (YouTube Shorts, TikTok, Instagram Reels, Facebook Reels)
+- **Metadata form** — title (required), description, tags
+- **Custom thumbnail** — optional thumbnail image upload
+- **Scheduled upload** — pick a date & time to schedule publishing
+- **Real-time progress bar** — powered by `XMLHttpRequest.upload.onprogress`; shows live upload percentage and speed (MB/s) based on actual bytes transferred
+- **Upload success modal** — responsive confirmation dialog after a successful upload
+
+#### 🎬 My Videos (`/my-videos`)
+- Full list of all uploaded videos
+- Filter by status: pending, processing, published, failed
+
+#### 💳 Billing (`/billing`)
+- **Standalone page** — no sidebar; uses only the Topbar header
+- **Back to Dashboard** button
+- **3 pricing tiers**: Basic ($4.55/mo), Premium ($9.09/mo), Enterprise ($21.21/mo)
+- "Best Value" ribbon + orange border on the Premium plan card
+- Hover animation on cards (lift effect)
+- **Trust badges** — Secure Payments, 30-Day Money Back, 24/7 Support, Cancel Anytime
+- **Enterprise CTA banner** — gradient banner with a "Contact Us" button for custom plans
+- Fully integrated with `I18nContext` (EN / ZH)
+- Ready to connect to a payment gateway (e.g. Midtrans)
+
+#### 👤 Profile (`/profile`) & Settings (`/settings`)
+- Account information and preference management
+
+---
+
+### Admin Area
+
+> Access via `/admin/auth/sign-in`. Completely separate from the user area.
+
+| Page | Path | Description |
+|---|---|---|
+| **Admin Dashboard** | `/admin` | Global platform statistics overview |
+| **User Management** | `/admin/users` | CRUD users, suspend accounts, view details |
+| **Upload History** | `/admin/uploads` | All uploads across all users |
+| **Transaction History** | `/admin/transactions` | Payment transaction records |
+| **Subscription Detail** | `/admin/subscriptions` | Per-user subscription status |
+| **Announcements** | `/admin/announcements` | Broadcast announcements to users |
+| **Error Logs** | `/admin/errors` | System error monitoring |
+| **System Settings** | `/admin/settings` | Platform configuration |
+
+---
+
+## Layouts & UI Components
+
+### MainLayout
+
+Used by all user pages except `/billing` and `/authentication` routes.
+
+```
+┌─────────────┬──────────────────────────────────────┐
+│             │  Topbar (Notifications | Lang | Profile)│
+│   Sidebar   ├──────────────────────────────────────┤
+│  (collapsed │                                       │
+│  on mobile) │          <Page Content>               │
+│             │                                       │
+│  ┌─────────────────────┐                           │
+│  │ Upgrade to Premium  │         Footer             │
+│  └─────────────────────┘                           │
+└──────────────────────────────────────────────────────┘
 ```
 
-### Linting
+### Topbar
+- **Logo** — visible on mobile/tablet only
+- **Hamburger button** — toggles sidebar on mobile
+- **Notifications** — dropdown with real-time notifications from backend
+- **Language Select** — toggle EN ↔ ZH, persisted in `localStorage`
+- **Profile Menu** — links to profile, settings, and logout
 
-```bash
-# Run ESLint
-npm run lint
+### SidebarCard
+A promotional card at the bottom of the sidebar with an **"Upgrade to Premium"** button that navigates to `/billing`.
 
-# Run ESLint with auto-fix
-npm run lint:fix
+---
+
+## Internationalization (I18n)
+
+**File:** `src/i18n/I18nContext.tsx`
+
+Custom i18n system built with React Context — no external library.
+
+**Supported languages:**
+- 🇬🇧 **English** (`en`) — default
+- 🇨🇳 **Chinese / 中文** (`zh`)
+
+**Usage:**
+
+```tsx
+import { useI18n } from 'i18n/I18nContext';
+
+const MyComponent = () => {
+  const { t, locale, setLocale } = useI18n();
+  return <Typography>{t('dashboard.uploadsToday')}</Typography>;
+};
 ```
 
-## 🌐 Supported Platforms
+**Adding new keys** — always add to **both** `en` and `zh` blocks:
 
-| Platform        | Format                   |
-| --------------- | ------------------------ |
-| YouTube Shorts  | Vertical (9:16), max 60s |
-| Facebook Reels  | Vertical (9:16), max 60s |
-| Instagram Reels | Vertical (9:16), max 60s |
-| TikTok          | Vertical (9:16), max 60s |
+```ts
+// src/i18n/I18nContext.tsx
+en: {
+  'billing.newKey': 'English text here',
+  ...
+},
+zh: {
+  'billing.newKey': '中文文本',
+  ...
+},
+```
 
-## 🌍 Internationalization
+Language preference is stored in `localStorage` under the key `"locale"`.
 
-The app supports **English** and **Chinese (中文)** out of the box. Language can be switched via the language selector in the top bar.
+---
 
-To add a new language:
+## Theme & Design
 
-1. Open `src/i18n/I18nContext.tsx`
-2. Add a new locale key to the `Locale` type
-3. Add the translation dictionary in the `translations` object
-4. Update the language selector component in `layouts/main-layout/topbar/LanguageSelect.tsx`
+**Main file:** `src/theme/theme.ts`
 
-## 📝 Available Routes
+- **Color mode**: Light (dark mode palette is pre-configured and ready to toggle)
+- **Primary color**: Blue (`primary.main`)
+- **Accent color**: Orange `#FF9800` used for premium/best-value highlights
+- **Border radius**: Consistent scale using MUI's `borderRadius` multiplier (×4 px)
+- **Component overrides**: Stored in `src/theme/components/`
 
-| Route                     | Page      | Description                                        |
-| ------------------------- | --------- | -------------------------------------------------- |
-| `/`                       | Dashboard | Upload stats, platform status, recent uploads      |
-| `/upload`                 | Upload    | Drag-and-drop video upload with platform selection |
-| `/my-videos`              | My Videos | Video library with status tracking                 |
-| `/profile`                | Profile   | User profile overview                              |
-| `/settings`               | Settings  | Account, notifications, password, danger zone      |
-| `/authentication/sign-in` | Sign In   | Login page                                         |
-| `/authentication/sign-up` | Sign Up   | Registration page                                  |
-| `*`                       | 404       | Page not found                                     |
+---
 
-## 📄 License
+## Routing
 
-This project is private and not licensed for public distribution.
+**File:** `src/routes/router.tsx`
+
+Uses **React Router v6** with `createBrowserRouter`. All pages are lazy-loaded via `React.lazy` + `Suspense` for optimal bundle splitting.
+
+```
+/                         → Dashboard           (MainLayout)
+/upload                   → Upload              (MainLayout)
+/my-videos                → My Videos           (MainLayout)
+/profile                  → Profile             (MainLayout)
+/settings                 → Settings            (MainLayout)
+/billing                  → Billing             (Standalone — no sidebar)
+/authentication/sign-in   → Sign In             (AuthLayout)
+/authentication/sign-up   → Sign Up             (AuthLayout)
+/admin                    → Admin Dashboard     (AdminLayout)
+/admin/users              → User Management     (AdminLayout)
+/admin/uploads            → Upload History      (AdminLayout)
+/admin/transactions       → Transaction History (AdminLayout)
+/admin/subscriptions      → Subscription Detail (AdminLayout)
+/admin/announcements      → Announcements       (AdminLayout)
+/admin/errors             → Error Logs          (AdminLayout)
+/admin/settings           → System Settings     (AdminLayout)
+/admin/auth/sign-in       → Admin Sign In       (AdminAuthLayout)
+*                         → 404 Not Found
+```
+
+> **Note:** `/billing` is intentionally placed **outside** of `MainLayout` so it renders without the sidebar — it functions as a standalone pricing page with only the Topbar.
+
+---
+
+## Configuration
+
+### Vite (`vite.config.ts`)
+
+| Setting | Value |
+|---|---|
+| Dev server port | `3000` |
+| Preview port | `5000` |
+| Host | `0.0.0.0` (accessible from other devices on the network) |
+| TypeScript checker | Enabled during dev |
+| ESLint checker | Enabled during dev |
+| Path aliases | Via `vite-tsconfig-paths` |
+
+### Path Aliases (`tsconfig.json`)
+
+Import using paths relative to `src/` without `../../`:
+
+```ts
+import IconifyIcon from 'components/base/IconifyIcon';
+import { useI18n } from 'i18n/I18nContext';
+import Topbar from 'layouts/main-layout/topbar';
+import paths from 'routes/paths';
+```
+
+### Backend API
+
+Currently hardcoded to `http://localhost:4000`.
+
+> For production, move to an environment variable: `VITE_API_URL`.
+
+---
+
+## Roadmap
+
+- [ ] **Payment Integration** — Connect "Select Plan" buttons on `/billing` to Midtrans API
+- [ ] **OAuth Connect Flow** — Formal flow for connecting/disconnecting YouTube, TikTok, Instagram, Facebook accounts
+- [ ] **Environment Variables** — Move backend URL to `VITE_API_URL`
+- [ ] **Dark Mode** — Light/dark theme toggle
+- [ ] **Real-time Notifications** — WebSocket / SSE for live backend notifications
+
+---
+
+*Built with ❤️ for the MultiUploads Platform*

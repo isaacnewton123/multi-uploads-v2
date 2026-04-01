@@ -94,49 +94,47 @@ const Upload = () => {
         formData.append('scheduledAt', new Date(scheduledAt).toISOString());
       }
 
-      // --------------------------------------------------------------------------------
-      // FAKE UPLOAD PROGRESS SIMULATION (For Localhost Dev/Demo)
-      // Because localhost gives 0ms latency, we artificialy delay the upload loop
-      // so the user can see a cool progress animation.
-      // --------------------------------------------------------------------------------
-      await new Promise<void>((resolve) => {
-        let current = 0;
-        const totalBytes = videoFile.size;
+      // Use XHR so we get real onprogress events
+      const data = await new Promise<{ success: boolean; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let lastLoaded = 0;
+        let lastTime = Date.now();
 
-        const interval = setInterval(() => {
-          // Increase progress by a random percentage between 2 and 10
-          const jumpAmount = Math.floor(Math.random() * 8) + 2;
-          current += jumpAmount;
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 95); // cap at 95 until server confirms
+            setUploadProgress(pct);
 
-          if (current >= 95) {
-            setUploadSpeed(t('upload.processing'));
-            setUploadProgress(95); // Cap at 95% until server actually replies
-            clearInterval(interval);
-            resolve();
-          } else {
-            // Calculate realistic speed bytes per second based on the fake loop
-            // (jumpAmount / 100) * totalBytes was sent in 350ms
-            const bytesUploadedInTick = (jumpAmount / 100) * totalBytes;
-            const bytesPerSecond = (bytesUploadedInTick / 350) * 1000;
-            const megabytesPerSecond = (bytesPerSecond / (1024 * 1024)).toFixed(1);
-
-            setUploadSpeed(`${megabytesPerSecond} MB/s`);
-            setUploadProgress(current);
+            // Calculate speed
+            const now = Date.now();
+            const dt = (now - lastTime) / 1000; // seconds
+            if (dt > 0) {
+              const bytesPerSec = (e.loaded - lastLoaded) / dt;
+              const mbps = (bytesPerSec / (1024 * 1024)).toFixed(1);
+              setUploadSpeed(`${mbps} MB/s`);
+            }
+            lastLoaded = e.loaded;
+            lastTime = Date.now();
           }
-        }, 350); // Tick every 350ms
-      });
-      // --------------------------------------------------------------------------------
+        };
 
-      const res = await fetch('http://localhost:4000/api/upload', {
-        method: 'POST',
-        body: formData,
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`HTTP ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error'));
+
+        xhr.open('POST', 'http://localhost:4000/api/upload');
+        xhr.send(formData);
       });
 
-      const data = await res.json();
       if (data.success) {
         setUploadProgress(100);
         setUploadSpeed(t('upload.done'));
-        await new Promise((resolve) => setTimeout(resolve, 800));
 
         // Reset form
         setVideoFile(null);

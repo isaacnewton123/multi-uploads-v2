@@ -163,6 +163,23 @@ const translations: Record<Locale, Record<string, string>> = {
     'upgrade.featDedicatedMgr': 'Dedicated support manager',
     'upgrade.cta': 'Select Plan',
 
+    // Billing page
+    'billing.badge.securePayments': 'Secure Payments',
+    'billing.badge.securePaymentsSub': 'SSL encrypted & PCI compliant',
+    'billing.badge.moneyBack': '30-Day Money Back',
+    'billing.badge.moneyBackSub': 'No questions asked refund',
+    'billing.badge.support': '24/7 Support',
+    'billing.badge.supportSub': 'AI + live chat always on',
+    'billing.badge.cancelAnytime': 'Cancel Anytime',
+    'billing.badge.cancelAnytimeSub': 'No lock-in contracts',
+    'billing.enterprise.title': 'Need a custom solution?',
+    'billing.enterprise.desc':
+      'If you have specific requirements — more accounts, custom integrations, or a dedicated team — contact us for a tailored plan.',
+    'billing.enterprise.cta': 'Contact Us',
+    'billing.footer.terms': 'Terms of Use',
+    'billing.footer.privacy': 'Privacy Policy',
+    'billing.footer.contact': 'Contact',
+
     // Footer
     'footer.allRights': 'All rights reserved.',
 
@@ -335,6 +352,23 @@ const translations: Record<Locale, Record<string, string>> = {
     'upgrade.featCustomDev': '定制功能开发',
     'upgrade.featDedicatedMgr': '专属技术支持经理',
     'upgrade.cta': '选择计划',
+
+    // Billing page
+    'billing.badge.securePayments': '安全支付',
+    'billing.badge.securePaymentsSub': 'SSL 加密与 PCI 合规',
+    'billing.badge.moneyBack': '30天退款保证',
+    'billing.badge.moneyBackSub': '无需理由，直接退款',
+    'billing.badge.support': '24/7 支持',
+    'billing.badge.supportSub': 'AI + 在线客服全天候',
+    'billing.badge.cancelAnytime': '随时取消',
+    'billing.badge.cancelAnytimeSub': '无绑定合约',
+    'billing.enterprise.title': '需要定制方案？',
+    'billing.enterprise.desc':
+      '如果您有特定需求——更多账户、自定义集成或专属团队——请联系我们获取定制计划。',
+    'billing.enterprise.cta': '联系我们',
+    'billing.footer.terms': '使用条款',
+    'billing.footer.privacy': '隐私政策',
+    'billing.footer.contact': '联系我们',
 
     // Footer
     'footer.allRights': '版权所有。',
