@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack';
 import Sidebar from 'layouts/main-layout/sidebar';
 import Topbar from './topbar';
 import Footer from './footer';
+import ChatWidget from 'components/common/ChatWidget';
 
 const MainLayout = ({ children }: PropsWithChildren) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -21,6 +22,7 @@ const MainLayout = ({ children }: PropsWithChildren) => {
         <Topbar isClosing={isClosing} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
         {children}
         <Footer />
+        <ChatWidget />
       </Stack>
     </Stack>
   );

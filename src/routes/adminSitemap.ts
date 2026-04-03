@@ -76,6 +76,13 @@ const adminSitemap: MenuItem[] = [
     icon: 'ic:round-settings-system-daydream',
     active: true,
   },
+  {
+    id: 9,
+    subheader: 'Live Support',
+    path: paths.adminSupport,
+    icon: 'ic:round-headset-mic',
+    active: true,
+  },
 ];
 
 export default adminSitemap;

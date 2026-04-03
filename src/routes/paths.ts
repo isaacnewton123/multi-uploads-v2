@@ -26,4 +26,5 @@ export default {
   adminAnnouncements: '/admin/announcements',
   adminErrors: '/admin/errors',
   adminSettings: '/admin/settings',
+  adminSupport: '/admin/support',
 };

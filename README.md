@@ -97,7 +97,7 @@ frontend/
     │   │   ├── sidebar/         # Collapsible navigation sidebar
     │   │   │   ├── index.tsx
     │   │   │   ├── DrawerItems.tsx
-    │   │   │   ├── SidebarCard.tsx  # "Upgrade to Premium" card at sidebar bottom
+    │   │   │   ├── SidebarCard.tsx  # Dynamic plan card tracking daily quotas
     │   │   │   └── list-items/
     │   │   ├── topbar/          # Top header (notifications, language, profile)
     │   │   │   ├── index.tsx
@@ -124,7 +124,8 @@ frontend/
     │   └── admin/               # All admin pages (9 pages)
     │
     ├── providers/
-    │   └── BreakpointsProvider.tsx  # Breakpoint helper context
+    │   ├── BreakpointsProvider.tsx  # Breakpoint helper context
+    │   └── PlanContext.tsx          # Subscription plan syncer + quota configs
     │
     ├── routes/
     │   ├── paths.ts             # All URL path constants
@@ -158,6 +159,7 @@ frontend/
 - **Metadata form** — title (required), description, tags
 - **Custom thumbnail** — optional thumbnail image upload
 - **Scheduled upload** — pick a date & time to schedule publishing
+- **Global plan awareness** — pulls user `PlanId` directly from `PlanContext` to sync permissions natively with the backend rate limiter
 - **Real-time progress bar** — powered by `XMLHttpRequest.upload.onprogress`; shows live upload percentage and speed (MB/s) based on actual bytes transferred
 - **Upload success modal** — responsive confirmation dialog after a successful upload
 
@@ -225,7 +227,7 @@ Used by all user pages except `/billing` and `/authentication` routes.
 - **Profile Menu** — links to profile, settings, and logout
 
 ### SidebarCard
-A promotional card at the bottom of the sidebar with an **"Upgrade to Premium"** button that navigates to `/billing`.
+Displays the **active subscription plan**, today's **dynamic upload progress bar**, and remaining quota mapped intelligently via `PlanContext`. Features a smart promotional CTA (e.g., "Upgrade Plan" or "View Plans").
 
 ---
 

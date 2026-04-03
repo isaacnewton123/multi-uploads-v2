@@ -27,6 +27,7 @@ const TransactionHistory = lazy(() => import('pages/admin/TransactionHistory'));
 const UploadHistory = lazy(() => import('pages/admin/UploadHistory'));
 const Announcements = lazy(() => import('pages/admin/Announcements'));
 const SubscriptionDetail = lazy(() => import('pages/admin/SubscriptionDetail'));
+const SupportChat = lazy(() => import('pages/admin/SupportChat'));
 
 import PageLoader from 'components/loading/PageLoader';
 import Progress from 'components/loading/Progress';
@@ -135,6 +136,10 @@ export const routes = [
           {
             path: 'settings',
             element: <SystemSettings />,
+          },
+          {
+            path: 'support',
+            element: <SupportChat />,
           },
         ],
       },

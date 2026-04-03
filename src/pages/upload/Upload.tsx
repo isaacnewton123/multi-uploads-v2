@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -10,6 +11,8 @@ import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { useI18n } from 'i18n/I18nContext';
+import { usePlan } from 'providers/PlanContext';
+import { useNotification } from 'providers/NotificationContext';
 import UploadSuccessModal from './UploadSuccessModal';
 
 const platformOptions = [
@@ -20,7 +23,10 @@ const platformOptions = [
 ];
 
 const Upload = () => {
+  const navigate = useNavigate();
   const { t } = useI18n();
+  const { planId } = usePlan();
+  const { showNotification } = useNotification();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -90,6 +96,7 @@ const Upload = () => {
       formData.append('description', description);
       formData.append('tags', tags);
       formData.append('platforms', JSON.stringify(selectedPlatforms));
+      formData.append('plan', planId);
       if (scheduledAt) {
         formData.append('scheduledAt', new Date(scheduledAt).toISOString());
       }
@@ -149,15 +156,43 @@ const Upload = () => {
         if (videoInput) videoInput.value = '';
         const thumbInput = document.getElementById('thumbnail-input') as HTMLInputElement;
         if (thumbInput) thumbInput.value = '';
-
         setShowSuccessModal(true);
       } else {
-        alert('Upload failed: ' + data.error);
+        const errorMessage = data.error || 'Server rejected the file.';
+        const isLimitError = errorMessage.toLowerCase().includes('limit reached');
+
+        showNotification({
+          title: isLimitError ? 'Upload Limit Reached' : t('upload.failed') || 'Upload Failed',
+          message: errorMessage,
+          type: 'error',
+          ...(isLimitError
+            ? {
+                primaryButtonText: 'Upgrade Plan',
+                onPrimaryClick: () => navigate('/billing'),
+                secondaryButtonText: t('upload.close') || 'Close',
+              }
+            : {}),
+        });
         setUploadProgress(0);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert('Upload failed: server error');
+
+      const errorMessage = err instanceof Error ? err.message : 'Server error occurred.';
+      const isLimitError = errorMessage.toLowerCase().includes('limit reached');
+
+      showNotification({
+        title: isLimitError ? 'Upload Limit Reached' : t('upload.failed') || 'Upload Failed',
+        message: errorMessage,
+        type: 'error',
+        ...(isLimitError
+          ? {
+              primaryButtonText: 'Upgrade Plan',
+              onPrimaryClick: () => navigate('/billing'),
+              secondaryButtonText: t('upload.close') || 'Close',
+            }
+          : {}),
+      });
       setUploadProgress(0);
     } finally {
       setUploading(false);

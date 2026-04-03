@@ -129,10 +129,16 @@ const translations: Record<Locale, Record<string, string>> = {
       'Analytics dashboard is currently under development. Stay tuned for powerful insights into your video performance!',
     'comingSoon.close': 'Got it',
 
-    // Sidebar card
-    'sidebar.upgradePremium': 'Upgrade to Premium',
-    'sidebar.upgradeDesc1': 'Get more daily uploads!',
-    'sidebar.upgradeDesc2': 'Upload to all platforms at once.',
+    // Sidebar plan card
+    'sidebar.currentPlan': 'Current Plan',
+    'sidebar.planFree': 'Free',
+    'sidebar.planBasic': 'Basic',
+    'sidebar.planPremium': 'Premium',
+    'sidebar.planEnterprise': 'Enterprise',
+    'sidebar.dailyUploads': 'Daily Uploads',
+    'sidebar.uploadsUsed': '{used} of {total} used',
+    'sidebar.viewPlans': 'View Plans',
+    'sidebar.upgradePlan': 'Upgrade Plan',
 
     // Upgrade / Pricing
     'upgrade.title': 'Choose Your Plan',
@@ -203,6 +209,25 @@ const translations: Record<Locale, Record<string, string>> = {
     'topbar.uploadFailed': 'Upload Failed',
     'topbar.uploadSuccessMsg': '"{title}" successfully uploaded to {platform}',
     'topbar.uploadFailedMsg': 'Failed to upload "{title}" to {platform}.',
+
+    // Chat Widget (user-facing)
+    'chat.welcomeMessage':
+      "Hi! I'm **Firdha**, your AI Assistant 🤖✨\n\nI can help you with video optimization, upload issues, plan upgrades, and more.\n\nHow can I help you today?",
+    'chat.supportWelcome':
+      "You're now connected to **Customer Service** 🎧\n\nPlease describe your issue and our team will respond shortly.",
+    'chat.tooltipText': 'Need help? Chat with Firdha here 💬',
+    'chat.headerAI': 'Firdha AI',
+    'chat.headerSupport': 'Customer Service',
+    'chat.statusAI': 'Online · AI Assistant',
+    'chat.statusSupport': 'Online · Ticket',
+    'chat.backToAI': 'Back to AI',
+    'chat.escalationTitle': 'Need more help?',
+    'chat.escalationDesc': 'Want to speak with our customer service team?',
+    'chat.escalationButton': 'Contact Customer Service',
+    'chat.placeholderAI': 'Ask Firdha anything...',
+    'chat.placeholderSupport': 'Type your message...',
+    'chat.errorOffline': "I'm having trouble connecting right now. Please try again in a moment.",
+    'chat.errorFallback': 'Sorry, I had trouble processing that.',
   },
 
   zh: {
@@ -321,9 +346,16 @@ const translations: Record<Locale, Record<string, string>> = {
     'comingSoon.close': '知道了',
 
     // Sidebar card
-    'sidebar.upgradePremium': '升级高级版',
-    'sidebar.upgradeDesc1': '获取更多每日上传次数！',
-    'sidebar.upgradeDesc2': '一键上传到所有平台。',
+    // Sidebar plan card
+    'sidebar.currentPlan': '当前套餐',
+    'sidebar.planFree': '免费版',
+    'sidebar.planBasic': '基础版',
+    'sidebar.planPremium': '高级版',
+    'sidebar.planEnterprise': '企业版',
+    'sidebar.dailyUploads': '每日上传',
+    'sidebar.uploadsUsed': '已用 {used} / {total}',
+    'sidebar.viewPlans': '查看套餐',
+    'sidebar.upgradePlan': '升级套餐',
 
     // Upgrade / Pricing
     'upgrade.title': '选择您的计划',
@@ -393,6 +425,24 @@ const translations: Record<Locale, Record<string, string>> = {
     'topbar.uploadFailed': '上传失败',
     'topbar.uploadSuccessMsg': '"{title}" 已成功上传到 {platform}',
     'topbar.uploadFailedMsg': '未能将 "{title}" 上传到 {platform}。',
+
+    // Chat Widget (user-facing)
+    'chat.welcomeMessage':
+      '嗨！我是 **Firdha**，您的 AI 助手 🤖✨\n\n我可以帮助您解决视频优化、上传问题、套餐升级等问题。\n\n今天我能为您做些什么？',
+    'chat.supportWelcome': '您已连接到 **客户服务** 🎧\n\n请描述您的问题，我们的团队会尽快回复。',
+    'chat.tooltipText': '需要帮助？和 Firdha 聊聊吧 💬',
+    'chat.headerAI': 'Firdha AI',
+    'chat.headerSupport': '客户服务',
+    'chat.statusAI': '在线 · AI 助手',
+    'chat.statusSupport': '在线 · 工单',
+    'chat.backToAI': '返回 AI',
+    'chat.escalationTitle': '需要更多帮助？',
+    'chat.escalationDesc': '想联系我们的客户服务团队吗？',
+    'chat.escalationButton': '联系客户服务',
+    'chat.placeholderAI': '向 Firdha 提问...',
+    'chat.placeholderSupport': '输入您的消息...',
+    'chat.errorOffline': '我目前连接遇到问题，请稍后再试。',
+    'chat.errorFallback': '抱歉，处理您的请求时遇到了问题。',
   },
 };
 
