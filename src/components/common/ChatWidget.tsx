@@ -28,6 +28,7 @@ interface Message {
   text: string;
   timestamp: Date;
   isEscalation?: boolean;
+  isTicketClosed?: boolean;
   attachment?: {
     url: string;
     type: 'image' | 'video';
@@ -76,10 +77,14 @@ const ChatWidget = () => {
   const [isTooltipLeaving, setIsTooltipLeaving] = useState(false);
   const [hasShownEscalation, setHasShownEscalation] = useState(false);
   const [ticketId, setTicketId] = useState<string | null>(null);
+  const [supportTicketClosed, setSupportTicketClosed] = useState(false);
+  const ticketIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
 
   const [aiMessages, setAiMessages] = useState<Message[]>([]);
   const [supportMessages, setSupportMessages] = useState<Message[]>([]);
@@ -96,23 +101,19 @@ const ChatWidget = () => {
     });
   }, [WELCOME_MSG, SUPPORT_WELCOME]);
 
+  useEffect(() => {
+    ticketIdRef.current = ticketId;
+  }, [ticketId]);
+
   const messages = mode === 'ai' ? aiMessages : supportMessages;
 
   // ── Theme-aware palette ─────────────────────────────────
   const colors = {
     chatBg: isDark ? '#1e1e2e' : '#ffffff',
-    messageAreaBg: isDark ? '#16161e' : '#f4f6f8',
-    aiBubbleBg: isDark ? '#2a2a3d' : '#f0f0f5',
-    aiBubbleText: isDark ? '#e0e0e0' : '#1a1a2e',
-    userBubbleBg: '#6366f1',
-    userBubbleText: '#ffffff',
     escalationBg: isDark ? '#1e1e2e' : '#faf8ff',
     escalationBorder: isDark ? '#6366f1' : '#c4b5fd',
     inputBg: isDark ? '#1e1e2e' : '#ffffff',
     typingBg: isDark ? '#2a2a3d' : '#e8e8f0',
-    timestamp: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)',
-    adminBubbleBg: isDark ? '#1a3a2a' : '#e8f5e9',
-    adminBubbleText: isDark ? '#a5d6a7' : '#1b5e20',
   };
 
   // ── Welcome tooltip auto-dismiss ────────────────────────
@@ -177,29 +178,82 @@ const ChatWidget = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const onTicketClosed = (payload: { ticketId: string }) => {
+      if (payload.ticketId !== ticketIdRef.current) return;
+      setSupportTicketClosed(true);
+      setPendingAttachment(null);
+      setSupportMessages((prev) => {
+        if (prev.some((m) => m.isTicketClosed)) return prev;
+        return [
+          ...prev,
+          {
+            id: `ticket-closed-${Date.now()}`,
+            sender: 'system',
+            text: t('chat.ticketClosedByAdmin'),
+            timestamp: new Date(),
+            isTicketClosed: true,
+          },
+        ];
+      });
+    };
+
+    socket.on('ticket_closed', onTicketClosed);
+    return () => {
+      socket.off('ticket_closed', onTicketClosed);
+    };
+  }, [t]);
+
   // ── Sync Support Chat History ─────────────────────────────
   useEffect(() => {
-    if (mode === 'support' && ticketId && isOpen) {
-      if (socketRef.current) {
-        socketRef.current.emit('join_ticket', ticketId);
-      }
+    if (mode !== 'support' || !ticketId || !isOpen) return;
 
-      // Fetch history once on join rather than polling
-      fetch(`${API_BASE}/api/support/messages/${ticketId}`)
-        .then((res) => res.json())
-        .then((data: Array<Message & { _id?: string; createdAt: string }>) => {
-          const mapped: Message[] = data.map((m, i) => ({
+    if (socketRef.current) {
+      socketRef.current.emit('join_ticket', ticketId);
+    }
+
+    const messagesUrl = `${API_BASE}/api/support/messages/${ticketId}`;
+    const statusUrl = `${API_BASE}/api/support/ticket/${ticketId}/status`;
+
+    Promise.all([
+      fetch(messagesUrl).then((r) => r.json()),
+      fetch(statusUrl).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([data, statusData]: [unknown, { status?: string } | null]) => {
+        const rows = Array.isArray(data) ? data : [];
+        const mapped: Message[] = rows.map(
+          (m: Message & { _id?: string; createdAt: string }, i: number) => ({
             id: m._id || `init-${i}`,
             sender: m.sender === 'admin' ? 'admin' : 'user',
             text: m.text,
             timestamp: new Date(m.createdAt),
             attachment: m.attachment,
-          }));
-          setSupportMessages([SUPPORT_WELCOME, ...mapped]);
-        })
-        .catch(() => {});
-    }
-  }, [mode, ticketId, isOpen]);
+          }),
+        );
+
+        const closed = statusData?.status === 'closed';
+        setSupportTicketClosed(closed);
+
+        let list: Message[] = [SUPPORT_WELCOME, ...mapped];
+        if (closed && !list.some((m) => m.isTicketClosed)) {
+          list = [
+            ...list,
+            {
+              id: 'ticket-closed-sync',
+              sender: 'system',
+              text: t('chat.ticketClosedByAdmin'),
+              timestamp: new Date(),
+              isTicketClosed: true,
+            },
+          ];
+        }
+        setSupportMessages(list);
+      })
+      .catch(() => {});
+  }, [mode, ticketId, isOpen, SUPPORT_WELCOME, t]);
 
   // ── Escalation injection ────────────────────────────────
   const maybeInjectEscalation = useCallback(
@@ -223,68 +277,58 @@ const ChatWidget = () => {
     [hasShownEscalation],
   );
 
-  // ── Attachments ─────────────────────────────────────────
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length || !ticketId) return;
-    const file = e.target.files[0];
+  useEffect(() => {
+    if (!pendingAttachment) {
+      setPendingPreviewUrl(null);
+      return;
+    }
+    if (!pendingAttachment.type.startsWith('image/')) {
+      setPendingPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(pendingAttachment);
+    setPendingPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingAttachment]);
 
-    setIsUploading(true);
+  // ── Attachments: pick file → review → caption → Send ─────
+  const onAttachmentPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!ticketId) return;
+    const file = e.target.files?.[0];
+    if (file) setPendingAttachment(file);
+    e.target.value = '';
+  };
+
+  const uploadSupportFile = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/support/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (data.error) {
-        alert(data.error);
-        setIsUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-
-      // Send the image/video message
-      const textVal =
-        inputVal.trim() || (data.type === 'image' ? '📷 Image sent' : '🎥 Video sent');
-
-      const userMsg: Message = {
-        id: Date.now().toString(),
-        sender: 'user',
-        text: textVal,
-        timestamp: new Date(),
-        attachment: data,
-      };
-
-      setSupportMessages((prev) => [...prev, userMsg]);
-      setInputVal('');
-
-      await fetch(`${API_BASE}/api/support/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ticketId,
-          sender: 'user',
-          senderName: 'Guest User',
-          text: userMsg.text,
-          attachment: userMsg.attachment,
-        }),
-      });
-    } catch {
-      alert('Upload failed');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    const res = await fetch(`${API_BASE}/api/support/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = (await res.json()) as {
+      error?: string;
+      url?: string;
+      type?: 'image' | 'video';
+    };
+    if (data.error) throw new Error(data.error);
+    return { url: data.url!, type: data.type! };
   };
 
   // ── Switch to support mode ──────────────────────────────
   const switchToSupport = async () => {
     setMode('support');
 
-    if (!ticketId) {
+    const wasClosed = supportTicketClosed;
+    if (wasClosed) {
+      setSupportTicketClosed(false);
+      setTicketId(null);
+      setSupportMessages([SUPPORT_WELCOME]);
+      setPendingAttachment(null);
+    }
+
+    const activeId = wasClosed ? null : ticketId;
+    if (!activeId) {
       try {
         const res = await fetch(`${API_BASE}/api/support/ticket`, {
           method: 'POST',
@@ -294,7 +338,6 @@ const ChatWidget = () => {
         const data = (await res.json()) as { ticketId: string };
         setTicketId(data.ticketId);
       } catch {
-        // fallback
         setTicketId(`LOCAL-${Date.now()}`);
       }
     }
@@ -302,22 +345,22 @@ const ChatWidget = () => {
 
   // ── Switch back to AI mode ──────────────────────────────
   const switchToAI = () => {
+    setPendingAttachment(null);
     setMode('ai');
   };
 
   // ── Send message ────────────────────────────────────────
   const handleSend = async () => {
     const text = inputVal.trim();
-    if (!text) return;
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text,
-      timestamp: new Date(),
-    };
 
     if (mode === 'ai') {
+      if (!text) return;
+      const userMsg: Message = {
+        id: Date.now().toString(),
+        sender: 'user',
+        text,
+        timestamp: new Date(),
+      };
       setAiMessages((prev) => [...prev, userMsg]);
       setInputVal('');
       setIsTyping(true);
@@ -360,26 +403,113 @@ const ChatWidget = () => {
       } finally {
         setIsTyping(false);
       }
-    } else {
-      // Support mode — send to backend
-      setSupportMessages((prev) => [...prev, userMsg]);
-      setInputVal('');
+      return;
+    }
 
-      if (ticketId) {
-        try {
-          await fetch(`${API_BASE}/api/support/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ticketId,
-              sender: 'user',
-              senderName: 'Guest User',
-              text,
-            }),
-          });
-        } catch {
-          // silent
+    // Support mode — text and/or staged attachment
+    if (supportTicketClosed) return;
+    if (!text && !pendingAttachment) return;
+
+    if (pendingAttachment) {
+      setIsUploading(true);
+      try {
+        const attachment = await uploadSupportFile(pendingAttachment);
+        const msgId = `user-${Date.now()}`;
+        const userMsg: Message = {
+          id: msgId,
+          sender: 'user',
+          text,
+          timestamp: new Date(),
+          attachment,
+        };
+        setPendingAttachment(null);
+        setSupportMessages((prev) => [...prev, userMsg]);
+        setInputVal('');
+        if (ticketId) {
+          try {
+            const res = await fetch(`${API_BASE}/api/support/message`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ticketId,
+                sender: 'user',
+                senderName: 'Guest User',
+                text,
+                attachment,
+              }),
+            });
+            if (res.status === 403) {
+              setSupportTicketClosed(true);
+              setSupportMessages((prev) => {
+                const without = prev.filter((m) => m.id !== msgId);
+                if (without.some((m) => m.isTicketClosed)) return without;
+                return [
+                  ...without,
+                  {
+                    id: `ticket-closed-${Date.now()}`,
+                    sender: 'system',
+                    text: t('chat.ticketClosedByAdmin'),
+                    timestamp: new Date(),
+                    isTicketClosed: true,
+                  },
+                ];
+              });
+              setInputVal(text);
+            }
+          } catch {
+            // silent
+          }
         }
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Upload failed');
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
+
+    const msgId = `user-${Date.now()}`;
+    const userMsg: Message = {
+      id: msgId,
+      sender: 'user',
+      text,
+      timestamp: new Date(),
+    };
+    setSupportMessages((prev) => [...prev, userMsg]);
+    setInputVal('');
+
+    if (ticketId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/support/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ticketId,
+            sender: 'user',
+            senderName: 'Guest User',
+            text,
+          }),
+        });
+        if (res.status === 403) {
+          setSupportTicketClosed(true);
+          setSupportMessages((prev) => {
+            const without = prev.filter((m) => m.id !== msgId);
+            if (without.some((m) => m.isTicketClosed)) return without;
+            return [
+              ...without,
+              {
+                id: `ticket-closed-${Date.now()}`,
+                sender: 'system',
+                text: t('chat.ticketClosedByAdmin'),
+                timestamp: new Date(),
+                isTicketClosed: true,
+              },
+            ];
+          });
+          setInputVal(text);
+        }
+      } catch {
+        // silent
       }
     }
   };
@@ -401,13 +531,6 @@ const ChatWidget = () => {
   const toggleChat = () => {
     if (isOpen) closeChat();
     else openChat();
-  };
-
-  // ── Bubble color by sender ──────────────────────────────
-  const getBubbleStyle = (sender: string) => {
-    if (sender === 'user') return { bg: colors.userBubbleBg, text: colors.userBubbleText };
-    if (sender === 'admin') return { bg: colors.adminBubbleBg, text: colors.adminBubbleText };
-    return { bg: colors.aiBubbleBg, text: colors.aiBubbleText };
   };
 
   // ── Render ──────────────────────────────────────────────
@@ -546,13 +669,15 @@ const ChatWidget = () => {
                         width: 7,
                         height: 7,
                         borderRadius: '50%',
-                        bgcolor: '#4ade80',
-                        boxShadow: '0 0 6px #4ade80',
+                        bgcolor: supportTicketClosed ? 'grey.500' : '#4ade80',
+                        boxShadow: supportTicketClosed ? 'none' : '0 0 6px #4ade80',
                       }}
                     />
                     {mode === 'ai'
                       ? t('chat.statusAI')
-                      : `${t('chat.statusSupport')} ${ticketId ?? ''}`}
+                      : supportTicketClosed
+                        ? t('chat.statusTicketClosed')
+                        : `${t('chat.statusSupport')} ${ticketId ?? ''}`}
                   </Typography>
                 </Box>
 
@@ -586,10 +711,62 @@ const ChatWidget = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1.5,
-                  bgcolor: colors.messageAreaBg,
+                  bgcolor: 'action.hover',
                 }}
               >
                 {messages.map((msg) => {
+                  // ── Ticket closed notice ──
+                  if (msg.isTicketClosed) {
+                    return (
+                      <Fade in key={msg.id}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            borderRadius: 3,
+                            bgcolor: colors.escalationBg,
+                            border: '1px solid',
+                            borderColor: colors.escalationBorder,
+                            textAlign: 'center',
+                          }}
+                        >
+                          <IconifyIcon
+                            icon="ic:round-lock-outline"
+                            sx={{ fontSize: 28, color: 'text.secondary', mb: 0.5 }}
+                          />
+                          <Typography variant="body2" fontWeight={600} mb={0.5}>
+                            {t('chat.ticketClosedByAdmin')}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            mb={1.5}
+                          >
+                            {t('chat.ticketClosedHint')}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconifyIcon icon="ic:round-auto-awesome" />}
+                            onClick={switchToAI}
+                            sx={{
+                              borderRadius: 99,
+                              textTransform: 'none',
+                              fontWeight: 600,
+                              px: 2.5,
+                              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                              color: '#fff',
+                              '&:hover': { opacity: 0.92 },
+                            }}
+                          >
+                            {t('chat.backToAI')}
+                          </Button>
+                        </Paper>
+                      </Fade>
+                    );
+                  }
+
                   // ── Escalation CTA card ──
                   if (msg.isEscalation) {
                     return (
@@ -642,9 +819,9 @@ const ChatWidget = () => {
                     );
                   }
 
-                  // ── Regular messages ──
+                  // ── Regular messages (bubble layout matches admin SupportChat) ──
                   const isUser = msg.sender === 'user';
-                  const bubble = getBubbleStyle(msg.sender);
+                  const isIncoming = msg.sender === 'ai' || msg.sender === 'admin';
                   return (
                     <Box
                       key={msg.id}
@@ -655,14 +832,13 @@ const ChatWidget = () => {
                         gap: 1,
                       }}
                     >
-                      {!isUser && (
+                      {isIncoming && (
                         <Avatar
                           src={msg.sender === 'ai' ? firdhaImg : undefined}
                           sx={{
-                            width: 26,
-                            height: 26,
-                            mb: 0.5,
-                            bgcolor: msg.sender === 'admin' ? '#059669' : undefined,
+                            width: 28,
+                            height: 28,
+                            bgcolor: msg.sender === 'admin' ? 'primary.dark' : undefined,
                             fontSize: 14,
                           }}
                         >
@@ -673,68 +849,72 @@ const ChatWidget = () => {
                       )}
 
                       <Box
-                        sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, maxWidth: '78%' }}
+                        sx={{
+                          maxWidth: '70%',
+                          p: 1.5,
+                          borderRadius: 3,
+                          borderBottomRightRadius: isUser ? 4 : 12,
+                          borderBottomLeftRadius: isUser ? 12 : 4,
+                          bgcolor: isIncoming ? 'primary.main' : 'background.paper',
+                          color: isIncoming ? 'primary.contrastText' : 'text.primary',
+                          boxShadow: 1,
+                        }}
                       >
-                        {msg.attachment && (
-                          <Box
-                            sx={{
-                              borderRadius: 2,
-                              overflow: 'hidden',
-                              bgcolor: 'black',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {msg.attachment.type === 'image' ? (
-                              <img
-                                src={msg.attachment.url}
-                                alt="Attachment"
-                                style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain' }}
-                              />
-                            ) : (
-                              <video
-                                src={msg.attachment.url}
-                                controls
-                                style={{ maxWidth: '100%', maxHeight: 200 }}
-                              />
-                            )}
-                          </Box>
-                        )}
-                        <Box
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 3,
-                            borderBottomRightRadius: isUser ? 4 : 12,
-                            borderBottomLeftRadius: isUser ? 12 : 4,
-                            bgcolor: bubble.bg,
-                            color: bubble.text,
-                            boxShadow: isDark
-                              ? '0 1px 3px rgba(0,0,0,0.3)'
-                              : '0 1px 4px rgba(0,0,0,0.08)',
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                              lineHeight: 1.6,
-                              '& strong': { fontWeight: 700 },
-                            }}
-                            dangerouslySetInnerHTML={{
-                              __html: msg.text
-                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\n/g, '<br/>'),
-                            }}
-                          />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          {msg.attachment && (
+                            <Box
+                              sx={{
+                                borderRadius: 1,
+                                overflow: 'hidden',
+                                bgcolor: 'black',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mb: 0.5,
+                              }}
+                            >
+                              {msg.attachment.type === 'image' ? (
+                                <img
+                                  src={msg.attachment.url}
+                                  alt="Attachment"
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: 200,
+                                    objectFit: 'contain',
+                                  }}
+                                />
+                              ) : (
+                                <video
+                                  src={msg.attachment.url}
+                                  controls
+                                  style={{ maxWidth: '100%', maxHeight: 200 }}
+                                />
+                              )}
+                            </Box>
+                          )}
+                          {msg.text.trim() ? (
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                                lineHeight: 1.5,
+                                '& strong': { fontWeight: 700 },
+                              }}
+                              dangerouslySetInnerHTML={{
+                                __html: msg.text
+                                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                  .replace(/\n/g, '<br/>'),
+                              }}
+                            />
+                          ) : null}
                           <Typography
                             variant="caption"
                             sx={{
                               display: 'block',
                               textAlign: 'right',
                               mt: 0.5,
-                              color: isUser ? 'rgba(255,255,255,0.6)' : colors.timestamp,
+                              opacity: 0.6,
                               fontSize: '0.62rem',
                             }}
                           >
@@ -745,6 +925,12 @@ const ChatWidget = () => {
                           </Typography>
                         </Box>
                       </Box>
+
+                      {isUser && (
+                        <Avatar sx={{ width: 28, height: 28, bgcolor: 'grey.400', fontSize: 14 }}>
+                          G
+                        </Avatar>
+                      )}
                     </Box>
                   );
                 })}
@@ -752,7 +938,7 @@ const ChatWidget = () => {
                 {/* Typing indicator */}
                 {isTyping && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={firdhaImg} sx={{ width: 26, height: 26 }} />
+                    <Avatar src={firdhaImg} sx={{ width: 28, height: 28 }} />
                     <Paper
                       elevation={0}
                       sx={{ py: 1, px: 1.5, borderRadius: 3, bgcolor: colors.typingBg }}
@@ -791,14 +977,68 @@ const ChatWidget = () => {
                   type="file"
                   ref={fileInputRef}
                   hidden
-                  onChange={handleFileUpload}
+                  onChange={onAttachmentPicked}
                   accept="image/*,video/*"
                 />
+                {mode === 'support' && pendingAttachment && !supportTicketClosed && (
+                  <Box
+                    sx={{
+                      mb: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                    }}
+                  >
+                    {pendingPreviewUrl ? (
+                      <Box
+                        component="img"
+                        src={pendingPreviewUrl}
+                        alt=""
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'divider',
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'divider',
+                          bgcolor: 'action.hover',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <IconifyIcon icon="ic:round-videocam" sx={{ fontSize: 28, opacity: 0.7 }} />
+                      </Box>
+                    )}
+                    <IconButton
+                      size="small"
+                      onClick={() => setPendingAttachment(null)}
+                      aria-label="Remove attachment"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <IconifyIcon icon="ic:round-close" />
+                    </IconButton>
+                  </Box>
+                )}
                 <TextField
                   fullWidth
                   variant="outlined"
                   placeholder={
-                    mode === 'ai' ? t('chat.placeholderAI') : t('chat.placeholderSupport')
+                    mode === 'ai'
+                      ? t('chat.placeholderAI')
+                      : supportTicketClosed
+                        ? t('chat.placeholderTicketClosed')
+                        : t('chat.placeholderSupport')
                   }
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
@@ -808,6 +1048,7 @@ const ChatWidget = () => {
                       handleSend();
                     }
                   }}
+                  disabled={mode === 'support' && supportTicketClosed}
                   InputProps={{
                     sx: { borderRadius: 3, pr: 0.5 },
                     endAdornment: (
@@ -816,7 +1057,7 @@ const ChatWidget = () => {
                           <IconButton
                             color="primary"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading || isTyping}
+                            disabled={supportTicketClosed || isUploading || isTyping || !ticketId}
                             sx={{ mr: 0.5 }}
                           >
                             <IconifyIcon icon="ic:round-attach-file" />
@@ -825,7 +1066,14 @@ const ChatWidget = () => {
                         <IconButton
                           color="primary"
                           onClick={handleSend}
-                          disabled={(!inputVal.trim() && !isUploading) || isTyping}
+                          disabled={
+                            (mode === 'support' && supportTicketClosed) ||
+                            (mode === 'support'
+                              ? !inputVal.trim() && !pendingAttachment
+                              : !inputVal.trim()) ||
+                            isUploading ||
+                            isTyping
+                          }
                         >
                           <IconifyIcon icon="ic:round-send" />
                         </IconButton>

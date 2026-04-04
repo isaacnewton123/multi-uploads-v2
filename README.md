@@ -11,6 +11,7 @@
 - [Project Structure](#project-structure)
 - [Pages & Features](#pages--features)
   - [User Area](#user-area)
+  - [Help & Chat (Firdha AI + Live Support)](#help--chat-firdha-ai--live-support)
   - [Admin Area](#admin-area)
 - [Layouts & UI Components](#layouts--ui-components)
 - [Internationalization (I18n)](#internationalization-i18n)
@@ -31,6 +32,7 @@
 | **Material UI (MUI)** | 5.16 | UI component library |
 | **React Router DOM** | 6.26 | Client-side routing |
 | **Iconify** | 5.0 | Vector icon set |
+| **Socket.IO Client** | 4 | Live support chat (namespace `/support`) |
 | **Bun** | latest | Package manager & script runner |
 
 ---
@@ -40,7 +42,7 @@
 ### Prerequisites
 
 - **Bun** ≥ 1.0 or **Node.js** ≥ 18
-- MultiUploads backend running at `http://localhost:4000`
+- MultiUploads **backend** at `http://localhost:4000` and **Socket.IO** at `http://localhost:4001` (required for live support + admin inbox badge)
 
 ### Install & Run
 
@@ -79,7 +81,7 @@ frontend/
     │
     ├── components/
     │   ├── base/                # Atomic components: IconifyIcon, Image
-    │   ├── common/              # Shared components used across pages
+    │   ├── common/              # Shared components (includes **ChatWidget** — Firdha AI + support)
     │   ├── loading/             # PageLoader, Progress (Suspense fallbacks)
     │   └── sections/
     │       └── dashboard/       # Widget sections for the Dashboard page
@@ -106,8 +108,11 @@ frontend/
     │   │   │   └── ProfileMenu.tsx
     │   │   └── footer/          # Simple copyright footer
     │   ├── auth-layout/         # Two-column authentication layout
-    │   ├── admin-layout/        # Admin panel layout
+    │   ├── admin-layout/        # Admin panel layout (+ sidebar nav)
     │   └── admin-auth-layout/   # Admin sign-in layout
+    │
+    ├── contexts/
+    │   └── AdminSupportInboxContext.tsx  # Open-ticket count for sidebar + support page (REST + socket)
     │
     ├── pages/
     │   ├── dashboard/           # User Dashboard
@@ -121,7 +126,7 @@ frontend/
     │   ├── settings/            # Account settings
     │   ├── authentication/      # Sign In & Sign Up
     │   ├── errors/              # 404 page
-    │   └── admin/               # All admin pages (9 pages)
+    │   └── admin/               # Admin pages (dashboard, users, **SupportChat**, …)
     │
     ├── providers/
     │   ├── BreakpointsProvider.tsx  # Breakpoint helper context
@@ -183,6 +188,19 @@ frontend/
 
 ---
 
+### Help & Chat (Firdha AI + Live Support)
+
+**Component:** `src/components/common/ChatWidget.tsx` (floating FAB, mounted from the app shell).
+
+- **Firdha AI** — Chat with the assistant via `POST /api/chat/firdha` (backend needs `GEMINI_API_KEY`).
+- **Live Support** — Escalation flow creates or resumes an **open** support ticket, loads history from the REST API, and uses **Socket.IO** (`/support`, `join_ticket`) for realtime messages.
+- **Attachments** — User picks an image/video, optional caption, then **Send**; files upload to `POST /api/support/upload` and appear as bubbles (MinIO public URLs).
+- **Ticket closed** — When an admin closes the ticket, the user sees a **closed** state, disabled input, and can return to AI or start a new ticket later.
+
+Strings are localized via `I18nContext` (`chat.*` keys, EN / ZH).
+
+---
+
 ### Admin Area
 
 > Access via `/admin/auth/sign-in`. Completely separate from the user area.
@@ -197,6 +215,13 @@ frontend/
 | **Announcements** | `/admin/announcements` | Broadcast announcements to users |
 | **Error Logs** | `/admin/errors` | System error monitoring |
 | **System Settings** | `/admin/settings` | Platform configuration |
+| **Live Support** | `/admin/support` | Tickets (**Open** / **Closed**), realtime chat, close ticket, attachments |
+
+**Live Support UI (`SupportChat.tsx`):**
+
+- Split view: ticket list + conversation panel with **internal scroll** (fixed viewport height).
+- Socket.IO `join_admin` + `new_message` / `support_inbox_changed` to refresh lists and global **open-ticket count**.
+- **`AdminSupportInboxProvider`** (wraps `AdminLayout`) keeps the **red badge** on sidebar **Live Support** (1–**99+**) based on `GET /api/support/tickets?status=open`, updated over the socket and on a 30s poll fallback.
 
 ---
 
@@ -305,6 +330,7 @@ Uses **React Router v6** with `createBrowserRouter`. All pages are lazy-loaded v
 /admin/announcements      → Announcements       (AdminLayout)
 /admin/errors             → Error Logs          (AdminLayout)
 /admin/settings           → System Settings     (AdminLayout)
+/admin/support            → Live Support        (AdminLayout)
 /admin/auth/sign-in       → Admin Sign In       (AdminAuthLayout)
 *                         → 404 Not Found
 ```
@@ -337,11 +363,18 @@ import Topbar from 'layouts/main-layout/topbar';
 import paths from 'routes/paths';
 ```
 
-### Backend API
+### Backend API & realtime
 
-Currently hardcoded to `http://localhost:4000`.
+| Service | Dev URL | Used by |
+|---|---|---|
+| REST API | `http://localhost:4000` | Upload, videos, dashboard, support, chat |
+| Socket.IO | `http://localhost:4001` | `ChatWidget`, `SupportChat`, `AdminSupportInboxContext` |
 
-> For production, move to an environment variable: `VITE_API_URL`.
+URLs are **hardcoded** in the source today (`API_BASE` / socket URL constants).
+
+> For production, switch to env-driven values (e.g. `VITE_API_URL`, `VITE_SOCKET_URL`).
+
+**CORS:** the backend must allow your frontend origin (`FRONTEND_URL` on the server).
 
 ---
 
@@ -349,9 +382,10 @@ Currently hardcoded to `http://localhost:4000`.
 
 - [ ] **Payment Integration** — Connect "Select Plan" buttons on `/billing` to Midtrans API
 - [ ] **OAuth Connect Flow** — Formal flow for connecting/disconnecting YouTube, TikTok, Instagram, Facebook accounts
-- [ ] **Environment Variables** — Move backend URL to `VITE_API_URL`
+- [ ] **Environment Variables** — `VITE_API_URL` + `VITE_SOCKET_URL` for REST and Socket.IO
 - [ ] **Dark Mode** — Light/dark theme toggle
-- [ ] **Real-time Notifications** — WebSocket / SSE for live backend notifications
+- [ ] **Per-ticket unread** — Admin badge today = **count of open tickets**; optional unread-message counts per ticket
+- [ ] **Authenticated support** — Map guest tickets to logged-in users when auth ships
 
 ---
 

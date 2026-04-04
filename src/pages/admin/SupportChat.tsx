@@ -18,6 +18,7 @@ import Divider from '@mui/material/Divider';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import IconifyIcon from 'components/base/IconifyIcon';
+import { useAdminSupportInbox } from 'contexts/AdminSupportInboxContext';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ const API_BASE = 'http://localhost:4000';
 // ─── Component ──────────────────────────────────────────────
 
 const SupportChat = () => {
+  const { openTicketCount, refreshOpenTicketCount } = useAdminSupportInbox();
   const [tabValue, setTabValue] = useState<'open' | 'closed'>('open');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -57,7 +59,8 @@ const SupportChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
 
   // ── Fetch tickets ─────────────────────────────────────
   const fetchTickets = useCallback(async () => {
@@ -78,18 +81,11 @@ const SupportChat = () => {
 
     socket.emit('join_admin');
 
-    socket.on('new_message', () => {
-      // Refresh tickets list so sidebar gets latest unread / snippet
-      fetchTickets();
-
-      // We handle messages locally if the ticket matches
-      setMessages((prev) => {
-        // Only insert if it belongs to actively selected ticket
-        return prev; // We'll fix this below inside a specific effect.
-      });
-    });
+    const onInboxChanged = () => fetchTickets();
+    socket.on('support_inbox_changed', onInboxChanged);
 
     return () => {
+      socket.off('support_inbox_changed', onInboxChanged);
       socket.disconnect();
     };
   }, [fetchTickets]);
@@ -102,7 +98,8 @@ const SupportChat = () => {
     // We replace the handler so it captures the current selectedTicket properly
     socket.off('new_message');
     socket.on('new_message', (msg: ChatMessage & { _id?: string }) => {
-      fetchTickets(); // always update ticket sidebar
+      fetchTickets();
+      void refreshOpenTicketCount();
 
       if (selectedTicket && msg.ticketId === selectedTicket.ticketId) {
         if (msg.sender !== 'admin') {
@@ -114,7 +111,7 @@ const SupportChat = () => {
         }
       }
     });
-  }, [selectedTicket, fetchTickets]);
+  }, [selectedTicket, fetchTickets, refreshOpenTicketCount]);
 
   // ── Fetch messages for selected ticket ────────────────
   const fetchMessages = useCallback(async () => {
@@ -132,29 +129,70 @@ const SupportChat = () => {
     fetchMessages();
   }, [fetchMessages]);
 
+  useEffect(() => {
+    setPendingFile(null);
+  }, [selectedTicket?.ticketId]);
+
+  useEffect(() => {
+    if (!pendingFile) {
+      setPendingPreviewUrl(null);
+      return;
+    }
+    if (!pendingFile.type.startsWith('image/')) {
+      setPendingPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(pendingFile);
+    setPendingPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingFile]);
+
   // ── Auto-scroll ───────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Send reply ────────────────────────────────────────
+  // ── Send reply (text and/or staged file + caption) ────
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedTicket) return;
-    setSending(true);
-
+    if (!selectedTicket) return;
     const textVal = replyText.trim();
-    const optimisticMsg: ChatMessage = {
-      ticketId: selectedTicket.ticketId,
-      sender: 'admin',
-      senderName: 'Support Agent',
-      text: textVal,
-      createdAt: new Date().toISOString(),
-    };
+    if (!textVal && !pendingFile) return;
 
-    setMessages((prev) => [...prev, optimisticMsg]);
-    setReplyText('');
-
+    setSending(true);
     try {
+      let attachment: ChatMessage['attachment'] | undefined;
+      if (pendingFile) {
+        const formData = new FormData();
+        formData.append('file', pendingFile);
+        const res = await fetch(`${API_BASE}/api/support/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          url?: string;
+          type?: 'image' | 'video';
+        };
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        attachment = { url: data.url!, type: data.type! };
+      }
+
+      const optimisticMsg: ChatMessage = {
+        ticketId: selectedTicket.ticketId,
+        sender: 'admin',
+        senderName: 'Support Agent',
+        text: textVal,
+        createdAt: new Date().toISOString(),
+        ...(attachment && { attachment }),
+      };
+
+      setMessages((prev) => [...prev, optimisticMsg]);
+      setReplyText('');
+      setPendingFile(null);
+
       await fetch(`${API_BASE}/api/support/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,70 +201,21 @@ const SupportChat = () => {
           sender: 'admin',
           senderName: 'Support Agent',
           text: textVal,
+          ...(attachment && { attachment }),
         }),
       });
       fetchTickets();
     } catch {
-      // silent
+      alert('Send failed');
     } finally {
       setSending(false);
     }
   };
 
-  // ── Attachments ───────────────────────────────────────
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length || !selectedTicket) return;
-    const file = e.target.files[0];
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/support/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-        setIsUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-
-      const textVal = replyText.trim() || (data.type === 'image' ? '📷 Image' : '🎥 Video');
-
-      const optimisticMsg: ChatMessage = {
-        ticketId: selectedTicket.ticketId,
-        sender: 'admin',
-        senderName: 'Support Agent',
-        text: textVal,
-        createdAt: new Date().toISOString(),
-        attachment: data,
-      };
-
-      setMessages((prev) => [...prev, optimisticMsg]);
-      setReplyText('');
-
-      await fetch(`${API_BASE}/api/support/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ticketId: selectedTicket.ticketId,
-          sender: 'admin',
-          senderName: 'Support Agent',
-          text: optimisticMsg.text,
-          attachment: optimisticMsg.attachment,
-        }),
-      });
-      fetchTickets();
-    } catch {
-      alert('Upload failed');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+  const onAdminFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setPendingFile(file);
+    e.target.value = '';
   };
 
   // ── Close ticket ──────────────────────────────────────
@@ -238,6 +227,7 @@ const SupportChat = () => {
       });
       setSelectedTicket(null);
       await fetchTickets();
+      await refreshOpenTicketCount();
     } catch {
       // silent
     }
@@ -264,12 +254,22 @@ const SupportChat = () => {
         Manage live support conversations with users
       </Typography>
 
-      <Grid container spacing={2.5} sx={{ height: 'calc(100vh - 220px)', minHeight: 500 }}>
+      <Grid
+        container
+        spacing={2.5}
+        sx={{
+          height: 'calc(100vh - 220px)',
+          minHeight: 500,
+          maxHeight: 'calc(100vh - 220px)',
+        }}
+      >
         {/* ── Ticket List (Left Panel) ───────────────── */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={4} sx={{ display: 'flex', minHeight: 0, maxHeight: '100%' }}>
           <Paper
             sx={{
-              height: '100%',
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -289,7 +289,15 @@ const SupportChat = () => {
                 value="open"
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Badge badgeContent={tabValue === 'open' ? tickets.length : 0} color="error">
+                    <Badge
+                      badgeContent={openTicketCount}
+                      color="error"
+                      max={99}
+                      invisible={openTicketCount === 0}
+                      sx={{
+                        '& .MuiBadge-badge': { fontWeight: 700, fontSize: '0.65rem' },
+                      }}
+                    >
                       <IconifyIcon icon="ic:round-mark-chat-unread" />
                     </Badge>
                     Open
@@ -370,10 +378,12 @@ const SupportChat = () => {
         </Grid>
 
         {/* ── Chat Area (Right Panel) ───────────────── */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={8} sx={{ display: 'flex', minHeight: 0, maxHeight: '100%' }}>
           <Paper
             sx={{
-              height: '100%',
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -384,7 +394,8 @@ const SupportChat = () => {
               // Empty state
               <Box
                 sx={{
-                  flexGrow: 1,
+                  flex: '1 1 auto',
+                  minHeight: 0,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -404,10 +415,19 @@ const SupportChat = () => {
                 </Typography>
               </Box>
             ) : (
-              <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                }}
+              >
                 {/* Chat Header */}
                 <Box
                   sx={{
+                    flexShrink: 0,
                     p: 2,
                     display: 'flex',
                     alignItems: 'center',
@@ -440,19 +460,26 @@ const SupportChat = () => {
                       size="small"
                       onClick={handleCloseTicket}
                       startIcon={<IconifyIcon icon="ic:round-close" />}
-                      sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 600 }}
+                      sx={{
+                        color: 'red',
+                        borderRadius: 99,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                      }}
                     >
                       Close Ticket
                     </Button>
                   )}
                 </Box>
 
-                {/* Messages */}
+                {/* Messages — scrolls inside fixed panel */}
                 <Box
                   sx={{
-                    flexGrow: 1,
+                    flex: '1 1 0',
+                    minHeight: 0,
                     p: 2,
                     overflowY: 'auto',
+                    overflowX: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 1.5,
@@ -520,16 +547,18 @@ const SupportChat = () => {
                                 )}
                               </Box>
                             )}
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {msg.text}
-                            </Typography>
+                            {msg.text.trim() ? (
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  whiteSpace: 'pre-wrap',
+                                  wordBreak: 'break-word',
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {msg.text}
+                              </Typography>
+                            ) : null}
                             <Typography
                               variant="caption"
                               sx={{
@@ -559,7 +588,68 @@ const SupportChat = () => {
 
                 {/* Reply input (only for open tickets) */}
                 {selectedTicket.status === 'open' && (
-                  <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                  <Box
+                    sx={{
+                      flexShrink: 0,
+                      p: 1.5,
+                      borderTop: 1,
+                      borderColor: 'divider',
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    {pendingFile && (
+                      <Box
+                        sx={{
+                          mb: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                      >
+                        {pendingPreviewUrl ? (
+                          <Box
+                            component="img"
+                            src={pendingPreviewUrl}
+                            alt=""
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              objectFit: 'cover',
+                              borderRadius: 1,
+                              border: 1,
+                              borderColor: 'divider',
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 1,
+                              border: 1,
+                              borderColor: 'divider',
+                              bgcolor: 'action.hover',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <IconifyIcon
+                              icon="ic:round-videocam"
+                              sx={{ fontSize: 28, opacity: 0.7 }}
+                            />
+                          </Box>
+                        )}
+                        <IconButton
+                          size="small"
+                          onClick={() => setPendingFile(null)}
+                          aria-label="Remove attachment"
+                          color="default"
+                        >
+                          <IconifyIcon icon="ic:round-close" />
+                        </IconButton>
+                      </Box>
+                    )}
                     <TextField
                       fullWidth
                       variant="outlined"
@@ -580,13 +670,13 @@ const SupportChat = () => {
                               type="file"
                               ref={fileInputRef}
                               hidden
-                              onChange={handleFileUpload}
+                              onChange={onAdminFilePicked}
                               accept="image/*,video/*"
                             />
                             <IconButton
                               color="primary"
                               onClick={() => fileInputRef.current?.click()}
-                              disabled={isUploading || sending}
+                              disabled={sending}
                               sx={{ mr: 0.5 }}
                             >
                               <IconifyIcon icon="ic:round-attach-file" />
@@ -594,7 +684,7 @@ const SupportChat = () => {
                             <IconButton
                               color="primary"
                               onClick={handleSendReply}
-                              disabled={(!replyText.trim() && !isUploading) || sending}
+                              disabled={(!replyText.trim() && !pendingFile) || sending}
                             >
                               <IconifyIcon icon="ic:round-send" />
                             </IconButton>
@@ -607,7 +697,7 @@ const SupportChat = () => {
                     />
                   </Box>
                 )}
-              </>
+              </Box>
             )}
           </Paper>
         </Grid>

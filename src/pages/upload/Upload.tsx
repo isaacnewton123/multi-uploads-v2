@@ -285,7 +285,7 @@ const Upload = () => {
                     label="Change video"
                     variant="outlined"
                     size="small"
-                    sx={{ fontWeight: 600 }}
+                    sx={{ color: 'text.secondary', fontWeight: 600 }}
                   />
                 </>
               ) : (

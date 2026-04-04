@@ -225,9 +225,15 @@ const translations: Record<Locale, Record<string, string>> = {
     'chat.escalationDesc': 'Want to speak with our customer service team?',
     'chat.escalationButton': 'Contact Customer Service',
     'chat.placeholderAI': 'Ask Firdha anything...',
-    'chat.placeholderSupport': 'Type your message...',
+    'chat.placeholderSupport':
+      'Optional caption — pick a file to preview, then Send (or text only)',
     'chat.errorOffline': "I'm having trouble connecting right now. Please try again in a moment.",
     'chat.errorFallback': 'Sorry, I had trouble processing that.',
+    'chat.ticketClosedByAdmin': 'Support closed this conversation.',
+    'chat.ticketClosedHint':
+      'You can go back to the AI assistant, or tap “Contact Customer Service” again to open a new ticket.',
+    'chat.statusTicketClosed': 'Ticket closed',
+    'chat.placeholderTicketClosed': 'This ticket is closed — start a new chat from help below.',
   },
 
   zh: {
@@ -440,9 +446,13 @@ const translations: Record<Locale, Record<string, string>> = {
     'chat.escalationDesc': '想联系我们的客户服务团队吗？',
     'chat.escalationButton': '联系客户服务',
     'chat.placeholderAI': '向 Firdha 提问...',
-    'chat.placeholderSupport': '输入您的消息...',
+    'chat.placeholderSupport': '可写说明 — 选文件预览后点发送，或只发文字',
     'chat.errorOffline': '我目前连接遇到问题，请稍后再试。',
     'chat.errorFallback': '抱歉，处理您的请求时遇到了问题。',
+    'chat.ticketClosedByAdmin': '客服已结束此会话。',
+    'chat.ticketClosedHint': '可返回 AI 助手，或再次点击「联系客户服务」开启新工单。',
+    'chat.statusTicketClosed': '工单已关闭',
+    'chat.placeholderTicketClosed': '此工单已关闭 — 请通过下方帮助发起新会话。',
   },
 };
 

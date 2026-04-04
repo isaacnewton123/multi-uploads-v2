@@ -16,6 +16,9 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { useI18n } from 'i18n/I18nContext';
+import Badge from '@mui/material/Badge';
+import paths from 'routes/paths';
+import { useAdminSupportInbox } from 'contexts/AdminSupportInboxContext';
 
 // Map sitemap subheader keys → i18n keys
 const labelKeys: Record<string, string> = {
@@ -33,7 +36,11 @@ interface ListItemProps extends MenuItem {
 const ListItem = ({ subheader, icon, path, expanded = true }: ListItemProps) => {
   const location = useLocation();
   const { t } = useI18n();
+  const { openTicketCount } = useAdminSupportInbox();
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
+
+  const isLiveSupport = path === paths.adminSupport;
+  const supportBadge = isLiveSupport && openTicketCount > 0 ? openTicketCount : undefined;
 
   const isActive =
     path === '/' || path === '/admin'
@@ -85,16 +92,40 @@ const ListItem = ({ subheader, icon, path, expanded = true }: ListItemProps) => 
             position: 'relative',
           }}
         >
-          {icon && (
-            <IconifyIcon
-              icon={icon}
-              fontSize="h4.fontSize"
-              sx={{
-                color: isActive ? 'primary.main' : 'text.disabled',
-                opacity: isComingSoon ? 0.5 : 1,
-              }}
-            />
-          )}
+          {icon &&
+            (supportBadge !== undefined ? (
+              <Badge
+                badgeContent={supportBadge}
+                color="error"
+                max={99}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontWeight: 700,
+                    fontSize: '0.65rem',
+                    minWidth: 18,
+                    height: 18,
+                  },
+                }}
+              >
+                <IconifyIcon
+                  icon={icon}
+                  fontSize="h4.fontSize"
+                  sx={{
+                    color: isActive ? 'primary.main' : 'text.disabled',
+                    opacity: isComingSoon ? 0.5 : 1,
+                  }}
+                />
+              </Badge>
+            ) : (
+              <IconifyIcon
+                icon={icon}
+                fontSize="h4.fontSize"
+                sx={{
+                  color: isActive ? 'primary.main' : 'text.disabled',
+                  opacity: isComingSoon ? 0.5 : 1,
+                }}
+              />
+            ))}
           {!expanded && isComingSoon && (
             <IconifyIcon
               icon="ic:round-lock"
